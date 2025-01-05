@@ -11,14 +11,13 @@ public class PID_controller
     private float target, current;
     private float Pout, Iout, Dout, Iterm;
     public float output;
-    public double max_output;
+    public float max_output;
 
     public PID_controller()
     {
         Kp = 0;
         Ki = 0;
         Kd = 0;
-        max_output = Math.Pow(2.0f, 31) - 1;
     }
 
     public void Set_parameter(float kp, float ki, float kd)
@@ -53,7 +52,6 @@ public class PID_controller
 
     public void Update()
     {
-        max_output = Math.Pow(2.0f, 31) - 1;
         time = Time.time;
         deltatime = time - last_time;
         error = target - current;
@@ -62,7 +60,7 @@ public class PID_controller
         Dout = Kd * (error - last_error) / deltatime;
         Iout += Iterm;
         output = Pout + Iout + Dout;
-        output = Math.Clamp(output, -float.MaxValue, float.MaxValue);
+        output = Math.Clamp(output, -max_output, max_output);
         last_error = error;
         last_time = time;
     }
@@ -93,7 +91,7 @@ public class PID : MonoBehaviourPun
     {
         if (!photonView.IsMine) return;
         for (int i = 0; i <= PID_num; i++)
-        {
+        {Debug.Log(i.ToString()+' '+PID_instance[i].Get_output().ToString());
             PID_instance[i].Update();
         }
     }

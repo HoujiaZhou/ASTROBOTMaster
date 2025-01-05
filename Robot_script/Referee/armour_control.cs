@@ -9,34 +9,38 @@ public class armour_control : MonoBehaviourPun
     private Robot_color color_;
    [SerializeField] private Material main_color;
    [SerializeField] private Referee_control Robot;
-    private int damage_total;
     private int attacked_count = 0;
     private bool Color_=true;
-    public void armour_attacked(Robot_type bullet_type)
+    Damage_Log damage_log;
+    public void armour_attacked(Robot_type bullet_type,string nickname)
     {
         if (bullet_type == Robot_type.Infantry)
         {
             attacked_count++;
-            damage_total += 10;
+            damage_log.SmallBulletDamage += 10;
+            damage_log.LastDamagenickname = nickname;
         }
         if (bullet_type == Robot_type.Hero)
         {
             attacked_count++;
-            damage_total += 100;
+            damage_log.BigBulletDamage += 100;
+            damage_log.LastDamagenickname = nickname;
         }
     }
     [PunRPC]
-    public void armour_attacked_PUN(Robot_type bullet_type)
+    public void armour_attacked_PUN(Robot_type bullet_type,string nickname)
     {
         if (bullet_type == Robot_type.Infantry)
         {
             attacked_count++;
-            damage_total += 10;
+            damage_log.SmallBulletDamage += 10;
+            damage_log.LastDamagenickname = nickname;
         }
         if (bullet_type == Robot_type.Hero)
         {
             attacked_count++;
-            damage_total += 100;
+            damage_log.BigBulletDamage += 100;
+            damage_log.LastDamagenickname = nickname;
         }
     }
     public int Get_robot_defense_buff()
@@ -98,6 +102,7 @@ public class armour_control : MonoBehaviourPun
         {
             main_color = blue;
         }
+        damage_log.clear();
         light1.material = main_color;
         light2.material = main_color;
     }
@@ -115,7 +120,6 @@ public class armour_control : MonoBehaviourPun
         {
             if (Robot.Get_robotHP() == 0)
             {
-                damage_total = 0;
                 time = 0;
                 if (now_color != blink)
                 {
@@ -140,14 +144,17 @@ public class armour_control : MonoBehaviourPun
                 time += Time.deltaTime;
                 if (time >= 0.05)
                 {
-                    int damage = damage_total;
-                    if(damage!=0)
-                    Robot.Damage_settle(damage);
+                    int bigDamage = damage_log.BigBulletDamage;
+                    int smallDamage = damage_log.SmallBulletDamage;
+                    if(bigDamage!=0)
+                        Robot.Damage_settle(bigDamage,Damage_type.BigBullet,damage_log.LastDamagenickname);
                     //referee 造成伤害
-
-                    damage_total -= damage;
+                    if(smallDamage != 0)
+                        Robot.Damage_settle(smallDamage,Damage_type.SmallBullet,damage_log.LastDamagenickname);
+                    damage_log.BigBulletDamage -= bigDamage;
+                    damage_log.SmallBulletDamage -= smallDamage;
                     time = 0;
-                    if (damage != 0)
+                    if (bigDamage+smallDamage != 0)
                     { blink_enabled = true; }
                 }
             }

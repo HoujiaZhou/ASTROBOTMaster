@@ -26,6 +26,29 @@ public enum Robot_buff
     supply = 0b00000001,
 };
 
+public struct Damage_Log
+{
+    public int SmallBulletDamage, BigBulletDamage;
+    public int ExcessheatDamage, UnknowDemage;
+    public string LastDamagenickname;
+    public void clear()
+    {
+        SmallBulletDamage = 0;
+        BigBulletDamage = 0;
+        ExcessheatDamage = 0;
+        UnknowDemage = 0;
+        LastDamagenickname = "";
+    }
+};
+
+public enum Damage_type
+{
+    SmallBullet,
+    BigBullet,
+    Excessheat,
+    UnknowDemage,
+}
+
 public class Level_System
 {
     public int level;
@@ -149,7 +172,8 @@ public class Robot_chassis
     public Chassis_referee_mode chassis_mode;
     public int deadNum;
     private Rule_RMUL2025 rule;
-
+    public Damage_Log damage_Log;
+    public bool deadFlag = false;
     public Robot_chassis()
     {
         deadNum = 0;
@@ -190,6 +214,7 @@ public class Robot_chassis
 
     public void Kill_robot(int time)
     {
+        deadFlag = true;
         deadNum++;
         robotHP = 0;
         whole_time = time;
@@ -202,6 +227,8 @@ public class Robot_chassis
     {
         if (dead_time >= 0)
         {
+            
+            damage_Log.clear();
             Add_defense_buff(100, 10);
             robot_Case = Robot_Case.Alive;
             robotHP = robot_MAXHP / 5;
@@ -301,7 +328,8 @@ public class Referee_control : MonoBehaviourPun
     public Rule_RMUL2025 rule;
     private Robot_control robot_Control;
     public bool initflag = false;
-
+    public int selfWinpoint;
+    public int killedNum,deadNum;
     [PunRPC]
     public void Sync_referee(Robot_type robot_Type, Robot_color robot_Color, string NickName)
     {
@@ -328,6 +356,14 @@ public class Referee_control : MonoBehaviourPun
         level_system.give_exp(exp);
     }
 
+    public void Kill_Xp(int level)
+    {
+        killedNum++;
+        int gap = level - level_system.level;
+        if (gap <= 0) gap = 0;
+        Add_Exp((int)(50 * (1 + 0.2f * gap)));
+    }
+    
     public void Init(Robot_type robot_Type, Robot_color robot_Color, string NickName, Rule_RMUL2025 rule)
     {
         robot_type = robot_Type;
@@ -335,6 +371,7 @@ public class Referee_control : MonoBehaviourPun
         referee_nickname = NickName;
         this.rule = rule;
         robot_Chassis.Add_rule(rule);
+        selfWinpoint = 0;
         photonView.RPC("Sync_referee", RpcTarget.Others, robot_Type, robot_Color, NickName);
         if (PhotonNetwork.IsMasterClient)
         {
@@ -342,6 +379,7 @@ public class Referee_control : MonoBehaviourPun
         }
 
         initflag = true;
+        rule.Set_LocalRobot(this);
         StartCoroutine(ExecutePeriodically());
     }
 
@@ -421,6 +459,10 @@ public class Referee_control : MonoBehaviourPun
         return robot_Chassis.buff;
     }
 
+    public Damage_Log Get_damage_Log()
+    {
+        return robot_Chassis.damage_Log;
+    }
     public void Add_buff(Robot_buff buff_type, int buff_time)
     {
         if (buff_type == Robot_buff.supply)
@@ -462,6 +504,37 @@ public class Referee_control : MonoBehaviourPun
             robot_Chassis.chassis_defense_buff);
     }
 
+    public void Damage_settle(int total_damage, Damage_type demage_type)
+    {
+        robot_Chassis.robotHP -= total_damage * (1 - robot_Chassis.chassis_defense_buff / 100);
+        photonView.RPC("Sync_Chassis_data", RpcTarget.Others, robot_Chassis.robotHP,
+            robot_Chassis.chassis_defense_buff);
+        if (demage_type == Damage_type.Excessheat)
+            robot_Chassis.damage_Log.ExcessheatDamage += total_damage;
+        else if(demage_type == Damage_type.SmallBullet)
+            robot_Chassis.damage_Log.SmallBulletDamage += total_damage;
+        else if(demage_type == Damage_type.BigBullet)
+            robot_Chassis.damage_Log.BigBulletDamage += total_damage;
+        else if(demage_type == Damage_type.UnknowDemage)
+            robot_Chassis.damage_Log.UnknowDemage += total_damage;
+    }
+
+    public void Damage_settle(int total_damage, Damage_type demage_type, string demager_name)
+    {
+        robot_Chassis.robotHP -= total_damage * (1 - robot_Chassis.chassis_defense_buff / 100);
+        photonView.RPC("Sync_Chassis_data", RpcTarget.Others, robot_Chassis.robotHP,
+            robot_Chassis.chassis_defense_buff);
+        if (demage_type == Damage_type.Excessheat)
+            robot_Chassis.damage_Log.ExcessheatDamage += total_damage;
+        else if(demage_type == Damage_type.SmallBullet)
+            robot_Chassis.damage_Log.SmallBulletDamage += total_damage;
+        else if(demage_type == Damage_type.BigBullet)
+            robot_Chassis.damage_Log.BigBulletDamage += total_damage;
+        else if(demage_type == Damage_type.UnknowDemage)
+            robot_Chassis.damage_Log.UnknowDemage += total_damage;
+        robot_Chassis.damage_Log.LastDamagenickname = demager_name;
+    }
+
     public void Damage_settle(int total_damage, bool Real_injury)
     {
         if (Real_injury == true)
@@ -472,10 +545,13 @@ public class Referee_control : MonoBehaviourPun
 
     public void Damage_by_MaxHP(float scale)
     {
-        robot_Chassis.robotHP -= (int)(scale * robot_Chassis.robot_MAXHP);
+        Damage_settle((int)(scale * robot_Chassis.robot_MAXHP));
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    public void Damage_by_MaxHP(float scale,Damage_type demage_type)
+    {
+        Damage_settle((int)(scale * robot_Chassis.robot_MAXHP),demage_type);
+    }
     void Start()
     {
         robot_Chassis.robotHP = chassis_HPlevel_powerfirst[0];
@@ -498,7 +574,6 @@ public class Referee_control : MonoBehaviourPun
         robot_Control.Enable_Control();
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (!photonView.IsMine) return;
@@ -528,13 +603,19 @@ public class Referee_control : MonoBehaviourPun
 
             if (robot_Chassis.Update())
             {
-                
+                if (robot_Chassis.deadFlag == true)
+                {
+                    string refereename = robot_Chassis.damage_Log.LastDamagenickname;
+                    rule.photonView.RPC("Kill_Get_Xp",RpcTarget.All,refereename,level_system.level);
+                    rule.photonView.RPC("Add_WinPoint",RpcTarget.All,refereename,20);
+                    robot_Chassis.deadFlag = false;
+                }
             }
-
             robot_Power.Check_power(robot_Chassis.robot_Case);
             robot_Power.Update(robot_type);
             if (level_system.Update())
             {
+                
             }
 
             if (robot_Chassis.robot_MAXHP < chassis_HPlevel_powerfirst[level_system.level])
@@ -554,6 +635,7 @@ public class Referee_control : MonoBehaviourPun
             yield return new WaitForSeconds(0.2f);
             if (photonView.IsMine)
             {
+                
                 photonView.RPC("Sync_level", RpcTarget.Others, level_system.level);
                 photonView.RPC("Sync_Chassis_data", RpcTarget.Others, robot_Chassis.robotHP,
                     robot_Chassis.chassis_defense_buff);

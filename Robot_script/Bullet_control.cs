@@ -53,7 +53,7 @@ public class Bullet_control : MonoBehaviourPun
             else
             {
 
-                armour.photonView.RPC("armour_attacked_PUN", RpcTarget.All, robot_type);
+                armour.photonView.RPC("armour_attacked_PUN", RpcTarget.All, robot_type,shooter_nickname);
             }
             if (referee != null)
             {
@@ -85,7 +85,7 @@ public class Bullet_control : MonoBehaviourPun
             }
             else
             {
-                armour.photonView.RPC("armour_attacked_PUN", RpcTarget.All, robot_type);
+                armour.photonView.RPC("armour_attacked_PUN", RpcTarget.All, robot_type,shooter_nickname);
             }
             if (referee != null)
             {

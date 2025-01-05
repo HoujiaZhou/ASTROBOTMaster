@@ -38,9 +38,9 @@ public class Chassis_control : MonoBehaviourPun
             vx_Pid = pID.Creat_PID();
             vy_Pid = pID.Creat_PID();
             vw_Pid = pID.Creat_PID();
-            vx_Pid.Set_parameter(wheel_Kp, wheel_Ki, wheel_Kd);
-            vy_Pid.Set_parameter(wheel_Kp, wheel_Ki, wheel_Kd);
-            vw_Pid.Set_parameter(rotate_kp, rotate_ki, rotate_kd);
+            vx_Pid.Set_parameter(wheel_Kp, wheel_Ki, wheel_Kd,120000);
+            vy_Pid.Set_parameter(wheel_Kp, wheel_Ki, wheel_Kd,120000);
+            vw_Pid.Set_parameter(rotate_kp, rotate_ki, rotate_kd,300000);
             vx_Pid.Set_measure(movebody.linearVelocity.x);
             vy_Pid.Set_measure(movebody.linearVelocity.z);
             vw_Pid.Set_measure(movebody.angularVelocity.y);

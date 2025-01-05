@@ -16,6 +16,7 @@ public class Referee_UI : MonoBehaviour
     private Robot_type robot_type;
     private Rule_RMUL2025 rule;
     private Robot_shoot _shootData;
+
     void Start()
     {
         parent = gameObject.GetComponent<UI_parent>();
@@ -34,7 +35,6 @@ public class Referee_UI : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
         if (!referee_)
         {
             if (robot)
@@ -46,7 +46,7 @@ public class Referee_UI : MonoBehaviour
                 parent = gameObject.GetComponent<UI_parent>();
                 robot = parent.Get_Robot();
             }
-        }   
+        }
         else
         {
             if (referee_.initflag == false) return;
@@ -58,6 +58,7 @@ public class Referee_UI : MonoBehaviour
             if (robot_case == Robot_Case.dead)
             {
                 dead_alive.Set_Alive_Time(referee_.Get_Alive_TotalTime(), -referee_.Get_Alive_time());
+
                 robot_case = referee_.Get_robot_case();
                 if (robot_case == Robot_Case.Alive)
                 {
@@ -73,9 +74,11 @@ public class Referee_UI : MonoBehaviour
                 {
                     Cursor.visible = true;
                     Cursor.lockState = CursorLockMode.Confined;
+                    dead_alive.Set_Damage_Log(referee_.Get_damage_Log());
                     dead_alive.Set_Alive_Time(referee_.Get_Alive_TotalTime(), -referee_.Get_Alive_time());
                 }
             }
+
             if (!rule)
             {
                 rule = referee_.rule;
@@ -90,7 +93,8 @@ public class Referee_UI : MonoBehaviour
                         Cursor.lockState = CursorLockMode.Confined;
                         buy_bullet.gameObject.SetActive(true);
                         referee_.Stop_control();
-                        buy_bullet.Init(_shootData.allow_bullet_num, rule.Get_Gold_Num(referee_.Get_Robot_color()), robot_type, referee_.Get_robot_buff()&(int)(Robot_buff.supply),referee_);
+                        buy_bullet.Init(_shootData.allow_bullet_num, rule.Get_Gold_Num(referee_.Get_Robot_color()),
+                            robot_type, referee_.Get_robot_buff() & (int)(Robot_buff.supply), referee_);
                     }
                 }
 
@@ -102,7 +106,8 @@ public class Referee_UI : MonoBehaviour
                         Cursor.lockState = CursorLockMode.Confined;
                         buy_bullet.gameObject.SetActive(true);
                         referee_.Stop_control();
-                        buy_bullet.Init(_shootData.allow_bullet_num, rule.Get_Gold_Num(referee_.Get_Robot_color()), robot_type, referee_.Get_robot_buff()&(int)(Robot_buff.supply),referee_);
+                        buy_bullet.Init(_shootData.allow_bullet_num, rule.Get_Gold_Num(referee_.Get_Robot_color()),
+                            robot_type, referee_.Get_robot_buff() & (int)(Robot_buff.supply), referee_);
                     }
                 }
 
@@ -110,7 +115,10 @@ public class Referee_UI : MonoBehaviour
                 {
                     buy_bullet.Message_Updata(rule.Get_Gold_Num(referee_.Get_Robot_color()));
                 }
-                rule_message.Set_Message(rule.Get_Gold_Num(Robot_color.RED),rule.Get_Gold_Num(Robot_color.BLUE),rule.Get_time(),rule.Get_State());
+
+                rule_message.Set_Message(rule.Get_Gold_Num(Robot_color.RED), rule.Get_Gold_Num(Robot_color.BLUE),
+                    rule.Get_Win_Points(Robot_color.RED), rule.Get_Win_Points(Robot_color.BLUE),
+                rule.Get_time(), rule.Get_State());
             }
 
             if (buy_bullet.gameObject.activeSelf == false)

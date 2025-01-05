@@ -20,7 +20,30 @@ public class Rule_RMUL2025 : MonoBehaviourPun
     public int redWinPoints, blueWinPoints;
     public Game_State gameState;
     private float lastTime;
+    private Referee_control localRobot;
+    [PunRPC]
+    public void Kill_Get_Xp(string nickname, int level)
+    {
+        if (localRobot.Get_nickname() == nickname)
+        {
+            localRobot.Kill_Xp(level);
+        }
+    }
 
+    [PunRPC]
+    public void Add_WinPoint(string nickname,int num)
+    {
+        if (localRobot.Get_nickname() == nickname)
+        {
+            localRobot.selfWinpoint += num;
+            Add_Win_Points(num,localRobot.Get_Robot_color());
+        }
+    }
+
+    public void Set_LocalRobot(Referee_control robot)
+    {
+        localRobot = robot;
+    }
     private void Start()
     {
         gameState = Game_State.Unprepared;
@@ -44,8 +67,8 @@ public class Rule_RMUL2025 : MonoBehaviourPun
                 photonView.RPC("Sync_Time", RpcTarget.Others, gameRunningTime);
                 photonView.RPC("Sync_Gold", RpcTarget.Others, redGold, Robot_color.RED);
                 photonView.RPC("Sync_Gold", RpcTarget.Others, blueGold, Robot_color.BLUE);
-                photonView.RPC("Sync_Gold", RpcTarget.Others, blueWinPoints, Robot_color.BLUE);
-                photonView.RPC("Sync_Gold", RpcTarget.Others, redWinPoints, Robot_color.RED);
+                photonView.RPC("Sync_WinPoint", RpcTarget.Others, blueWinPoints, Robot_color.BLUE);
+                photonView.RPC("Sync_WinPoint", RpcTarget.Others, redWinPoints, Robot_color.RED);
             }
         }
     }
@@ -174,12 +197,12 @@ public class Rule_RMUL2025 : MonoBehaviourPun
         if (robotColor == Robot_color.RED)
         {
             redWinPoints += amount;
-            photonView.RPC("Sync_Gold", RpcTarget.Others, redWinPoints, robotColor);
+            photonView.RPC("Sync_WinPoint", RpcTarget.Others, redWinPoints, robotColor);
         }
         else if (robotColor == Robot_color.BLUE)
         {
             blueWinPoints += amount;
-            photonView.RPC("Sync_Gold", RpcTarget.Others, blueWinPoints, robotColor);
+            photonView.RPC("Sync_WinPoint", RpcTarget.Others, blueWinPoints, robotColor);
         }
     }
 

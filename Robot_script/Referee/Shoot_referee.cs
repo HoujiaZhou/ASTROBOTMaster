@@ -94,7 +94,7 @@ public class Shoot_referee : MonoBehaviourPun
         {
             if (now_heat > Max_heat)
             {
-                referee.Damage_by_MaxHP(((float)(now_heat - Max_heat)) / 250 / 10);
+                referee.Damage_by_MaxHP(((float)(now_heat - Max_heat)) / 250 / 10,Damage_type.Excessheat);
             }
             now_heat -= (int)(cooling_rate * time);
             if (now_heat < 0) now_heat = 0;
