@@ -1,4 +1,6 @@
+using System.Net.Mime;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Referee_UI : MonoBehaviour
 {
@@ -10,6 +12,7 @@ public class Referee_UI : MonoBehaviour
     [SerializeField] private Dead_Alive_UI dead_alive;
     [SerializeField] private Buy_bullet_UI buy_bullet;
     [SerializeField] private Rule_message_UI rule_message;
+    [SerializeField] private Win_UI win_ui;
     private GameObject robot;
     private UI_parent parent;
     private Robot_Case robot_case;
@@ -54,7 +57,7 @@ public class Referee_UI : MonoBehaviour
             robot_type = referee_.Get_Robot_type();
             hP_bar.Set_hp(referee_.Get_robotHP(), referee_.Get_robotMaxHP(), referee_.Get_Robot_color());
             shoot.Set_shoot(_shootData);
-            level.set_level(referee_.Get_robot_level(), referee_.Get_robot_exp(), referee_.Get_robot_next_exp());
+            level.set_level(referee_.Get_robot_level(), referee_.Get_robot_exp(), referee_.Get_robot_next_exp(),referee_.Get_nickname());
             if (robot_case == Robot_Case.dead)
             {
                 dead_alive.Set_Alive_Time(referee_.Get_Alive_TotalTime(), -referee_.Get_Alive_time());
@@ -118,9 +121,18 @@ public class Referee_UI : MonoBehaviour
 
                 rule_message.Set_Message(rule.Get_Gold_Num(Robot_color.RED), rule.Get_Gold_Num(Robot_color.BLUE),
                     rule.Get_Win_Points(Robot_color.RED), rule.Get_Win_Points(Robot_color.BLUE),
-                rule.Get_time(), rule.Get_State());
+                    rule.Get_time(), rule.Get_State());
+                rule_message.Set_Robot_Data(rule.red1, rule.blue1, rule.red3, rule.blue3);
             }
 
+            if (rule.gameState == Game_State.BlueWin || rule.gameState == Game_State.RedWin)
+            {
+                referee_.Stop_control();
+                Cursor.visible = true;
+                Cursor.lockState = CursorLockMode.Confined;
+                win_ui.Set_Robot_Data(rule.red1, rule.red3, rule.blue1, rule.blue3);
+                win_ui.Set_Point(rule.redWinPoints, rule.blueWinPoints);
+            }
             if (buy_bullet.gameObject.activeSelf == false)
             {
                 referee_.Enable_control();

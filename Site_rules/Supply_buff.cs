@@ -4,8 +4,15 @@ public class Supply_buff : MonoBehaviour
 {
     [SerializeField]
     Robot_color robot_Color;
+    private bool Iswork;
+
+    public void Set_Work(bool iswork)
+    {
+        this.Iswork = iswork;
+    }
     void OnTriggerEnter(Collider collider)
     {
+        if (!Iswork) return;
         if(collider.gameObject.CompareTag("referee"))
         {
             Referee_control referee_ = collider.gameObject.GetComponent<Referee_control>();
@@ -17,6 +24,7 @@ public class Supply_buff : MonoBehaviour
     }
     void OnTriggerStay(Collider collider)
     {
+        if (!Iswork) return;
         if(collider.gameObject.CompareTag("referee"))
         {
             Referee_control referee_ = collider.gameObject.GetComponent<Referee_control>();
@@ -29,7 +37,7 @@ public class Supply_buff : MonoBehaviour
      
     void  OnTriggerExit(Collider collider)
     {
-        
+        if (!Iswork) return;
         if(collider.gameObject.CompareTag("referee"))
         {
             Referee_control referee_ = collider.gameObject.GetComponent<Referee_control>();

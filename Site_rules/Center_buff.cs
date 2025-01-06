@@ -2,13 +2,18 @@ using System;
 using Photon.Pun;
 using UnityEngine;
 
-public class Center_buff : MonoBehaviour
+public class Center_buff : MonoBehaviourPun
 {
     [SerializeField]private Rule_RMUL2025 rule;
     private float timer;
     private Robot_color occupyColor;
     private Referee_control referee;
+    private bool Iswork;
 
+    public void Set_Work(bool iswork)
+    {
+        this.Iswork = iswork;
+    }
     private void Start()
     {
         occupyColor = Robot_color.Null;
@@ -16,6 +21,9 @@ public class Center_buff : MonoBehaviour
 
     private void Update()
     {
+        if(referee)
+            if(referee.Get_robot_case() == Robot_Case.dead)
+                occupyColor = Robot_color.Null;
         if (!rule)
         {
             rule = GameObject.FindGameObjectWithTag("Rule").GetComponent<Rule_RMUL2025>();
@@ -27,7 +35,8 @@ public class Center_buff : MonoBehaviour
             {
                 if (occupyColor == Robot_color.RED || occupyColor == Robot_color.BLUE)
                 {
-                    rule.photonView.RPC("Add_WinPoint", RpcTarget.All, referee.Get_nickname(), 1);
+                    if(rule.localRobot.Get_nickname() == referee.Get_nickname())
+                        referee.selfWinpoint += 1;
                 }
 
                 timer -= 1.0f;
@@ -37,12 +46,14 @@ public class Center_buff : MonoBehaviour
 
     private void OnTriggerEnter(Collider collision)
     {
+        if(!Iswork)return;
         if (collision.gameObject.CompareTag("referee"))
         {
             if (occupyColor == Robot_color.Null)
             {
                 Referee_control referee_ = collision.gameObject.GetComponent<Referee_control>();
-                occupyColor = referee_.Get_Robot_color();
+                if(referee_.Get_robot_case() == Robot_Case.Alive)
+                    occupyColor = referee_.Get_Robot_color();
                 referee = referee_;
             }
         }
@@ -50,6 +61,7 @@ public class Center_buff : MonoBehaviour
 
     void OnTriggerExit(Collider collider)
     {
+        if(!Iswork)return;
         if (collider.gameObject.CompareTag("referee"))
         {
             Referee_control referee_ = collider.gameObject.GetComponent<Referee_control>();

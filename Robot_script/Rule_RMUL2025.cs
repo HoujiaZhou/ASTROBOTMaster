@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public enum Game_State
@@ -13,14 +14,23 @@ public enum Game_State
     Unprepared,
 }
 
+public struct Robot_Data
+{
+    public int MaxHp, Hp, WinPoint, level;
+}
+
 public class Rule_RMUL2025 : MonoBehaviourPun
 {
     public float gameRunningTime, gameTime;
     public int redGold, blueGold;
     public int redWinPoints, blueWinPoints;
     public Game_State gameState;
+    public Robot_Data red1, blue1, red3, blue3;
     private float lastTime;
-    private Referee_control localRobot;
+    public Referee_control localRobot;
+    [SerializeField] Center_buff center_buff;
+    [SerializeField] Supply_buff supply_buff_red, Supply_buff_blue;
+
     [PunRPC]
     public void Kill_Get_Xp(string nickname, int level)
     {
@@ -31,12 +41,88 @@ public class Rule_RMUL2025 : MonoBehaviourPun
     }
 
     [PunRPC]
-    public void Add_WinPoint(string nickname,int num)
+    public void Add_WinPoint(string nickname, int num)
     {
         if (localRobot.Get_nickname() == nickname)
         {
             localRobot.selfWinpoint += num;
-            Add_Win_Points(num,localRobot.Get_Robot_color());
+        }
+    }
+
+    [PunRPC]
+    public void Sync_Other_Robot(string nickname, int maxHp, int hp, int winPoint, int level)
+    {
+        if (nickname == "RED1")
+        {
+            red1.Hp = hp;
+            red1.MaxHp = maxHp;
+            red1.WinPoint = winPoint;
+            red1.level = level;
+        }
+        else if (nickname == "RED2")
+        {
+            red3.Hp = hp;
+            red3.MaxHp = maxHp;
+            red3.WinPoint = winPoint;
+            red3.level = level;
+        }
+        else if (nickname == "BLUE1")
+        {
+            blue1.Hp = hp;
+            blue1.MaxHp = maxHp;
+            blue1.WinPoint = winPoint;
+            blue1.level = level;
+        }
+        else if (nickname == "BLUE2")
+        {
+            blue3.Hp = hp;
+            blue3.MaxHp = maxHp;
+            blue3.WinPoint = winPoint;
+            blue3.level = level;
+        }
+    }
+
+    private void Winponit_Settle()
+    {
+        redWinPoints = red1.WinPoint + red3.WinPoint;
+        blueWinPoints = blue1.WinPoint + blue3.WinPoint;
+    }
+
+    public void Set_Robot_Data(string nickname, int maxHp, int hp, int winPoint, int level)
+    {
+        if (nickname == "RED1")
+        {
+            red1.Hp = hp;
+            red1.MaxHp = maxHp;
+            red1.WinPoint = winPoint;
+            red1.level = level;
+            photonView.RPC("Sync_Other_Robot", RpcTarget.All, nickname, red1.MaxHp, red1.Hp, red1.WinPoint, red1.level);
+        }
+        else if (nickname == "RED2")
+        {
+            red3.Hp = hp;
+            red3.MaxHp = maxHp;
+            red3.WinPoint = winPoint;
+            red3.level = level;
+            photonView.RPC("Sync_Other_Robot", RpcTarget.All, nickname, red3.MaxHp, red3.Hp, red3.WinPoint, red3.level);
+        }
+        else if (nickname == "BLUE1")
+        {
+            blue1.Hp = hp;
+            blue1.MaxHp = maxHp;
+            blue1.WinPoint = winPoint;
+            blue1.level = level;
+            photonView.RPC("Sync_Other_Robot", RpcTarget.All, nickname, blue1.MaxHp, blue1.Hp, blue1.WinPoint,
+                blue1.level);
+        }
+        else if (nickname == "BLUE2")
+        {
+            blue3.Hp = hp;
+            blue3.MaxHp = maxHp;
+            blue3.WinPoint = winPoint;
+            blue3.level = level;
+            photonView.RPC("Sync_Other_Robot", RpcTarget.All, nickname, blue3.MaxHp, blue3.Hp, blue3.WinPoint,
+                blue3.level);
         }
     }
 
@@ -44,6 +130,7 @@ public class Rule_RMUL2025 : MonoBehaviourPun
     {
         localRobot = robot;
     }
+
     private void Start()
     {
         gameState = Game_State.Unprepared;
@@ -67,8 +154,17 @@ public class Rule_RMUL2025 : MonoBehaviourPun
                 photonView.RPC("Sync_Time", RpcTarget.Others, gameRunningTime);
                 photonView.RPC("Sync_Gold", RpcTarget.Others, redGold, Robot_color.RED);
                 photonView.RPC("Sync_Gold", RpcTarget.Others, blueGold, Robot_color.BLUE);
-                photonView.RPC("Sync_WinPoint", RpcTarget.Others, blueWinPoints, Robot_color.BLUE);
-                photonView.RPC("Sync_WinPoint", RpcTarget.Others, redWinPoints, Robot_color.RED);
+                // if(gameState == Game_State.Running)
+                // {
+                //     if(localRobot.Get_nickname() == "RED1")
+                //         photonView.RPC("Sync_Other_Robot", RpcTarget.All, localRobot.Get_nickname(), red1);
+                //     if(localRobot.Get_nickname() == "RED2")
+                //         photonView.RPC("Sync_Other_Robot", RpcTarget.All, localRobot.Get_nickname(), red3);
+                //     if(localRobot.Get_nickname() == "BLUE1")
+                //         photonView.RPC("Sync_Other_Robot", RpcTarget.All, localRobot.Get_nickname(), blue1);
+                //     if(localRobot.Get_nickname() == "BLUE2")
+                //         photonView.RPC("Sync_Other_Robot", RpcTarget.All, localRobot.Get_nickname(), blue3);
+                // }
             }
         }
     }
@@ -192,22 +288,21 @@ public class Rule_RMUL2025 : MonoBehaviourPun
         }
     }
 
-    public void Add_Win_Points(int amount, Robot_color robotColor)
-    {
-        if (robotColor == Robot_color.RED)
-        {
-            redWinPoints += amount;
-            photonView.RPC("Sync_WinPoint", RpcTarget.Others, redWinPoints, robotColor);
-        }
-        else if (robotColor == Robot_color.BLUE)
-        {
-            blueWinPoints += amount;
-            photonView.RPC("Sync_WinPoint", RpcTarget.Others, blueWinPoints, robotColor);
-        }
-    }
-
     void Update()
     {
+        if (gameState != Game_State.Running)
+        {
+            center_buff.Set_Work(false);
+            supply_buff_red.Set_Work(false);
+            Supply_buff_blue.Set_Work(false);
+        }
+        else
+        {
+            center_buff.Set_Work(true);
+            supply_buff_red.Set_Work(true);
+            Supply_buff_blue.Set_Work(true);
+        }
+
         if (gameState == Game_State.Unprepared) return;
         if (!PhotonNetwork.IsMasterClient)
         {
@@ -231,7 +326,7 @@ public class Rule_RMUL2025 : MonoBehaviourPun
             else if (gameState == Game_State.Running)
             {
                 gameRunningTime += Time.deltaTime;
-
+                Winponit_Settle();
                 {
                     if (lastTime < 60 && gameRunningTime >= 60f)
                     {
@@ -252,6 +347,22 @@ public class Rule_RMUL2025 : MonoBehaviourPun
                     {
                         Add_Gold(300, Robot_color.All);
                     }
+                }
+                if (gameRunningTime >= 300)
+                {
+                    if (redWinPoints > blueWinPoints)
+                    {
+                        gameState = Game_State.RedWin;
+                    }
+                    else if (blueWinPoints > redWinPoints)
+                    {
+                        gameState = Game_State.BlueWin;
+                    }
+                    else
+                    {
+                    }
+
+                    photonView.RPC("Sync_Game_state", RpcTarget.Others, gameState);
                 }
             }
 

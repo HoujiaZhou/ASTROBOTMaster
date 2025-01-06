@@ -92,7 +92,7 @@ public class UI_manager : MonoBehaviour
     {
         if (UI_[uiDictionary[nickname]] == null)
         {
-            Debug.LogError(nickname + "UI未被创建 无法销毁");
+            Debug.LogWarning(nickname + "UI未被创建 无法销毁");
         }
 
         sortNum--;
@@ -174,6 +174,10 @@ public class UI_manager : MonoBehaviour
     {
         if (game_state == false)
         {
+            if (UI_[uiDictionary["Referee"]])
+            {
+                destroy_UI("Referee");
+            }
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.Confined;
             if (Room_state == false)
@@ -196,7 +200,7 @@ public class UI_manager : MonoBehaviour
             Show_UI("Robot", new Vector3(0, 0, 0), false);
             if (Input.GetKeyDown(KeyCode.Escape)== true)
             {
-                Show_UI("ExitGame", new Vector3(0, 0, 0), false);
+                // Show_UI("ExitGame", new Vector3(0, 0, 0), false);
             }
         }
     }

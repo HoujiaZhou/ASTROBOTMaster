@@ -91,7 +91,7 @@ public class PID : MonoBehaviourPun
     {
         if (!photonView.IsMine) return;
         for (int i = 0; i <= PID_num; i++)
-        {Debug.Log(i.ToString()+' '+PID_instance[i].Get_output().ToString());
+        {
             PID_instance[i].Update();
         }
     }

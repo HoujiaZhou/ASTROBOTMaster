@@ -639,6 +639,8 @@ public class Referee_control : MonoBehaviourPun
                 photonView.RPC("Sync_level", RpcTarget.Others, level_system.level);
                 photonView.RPC("Sync_Chassis_data", RpcTarget.Others, robot_Chassis.robotHP,
                     robot_Chassis.chassis_defense_buff);
+                rule.Set_Robot_Data(referee_nickname, robot_Chassis.robot_MAXHP, robot_Chassis.robotHP, selfWinpoint,
+                    Get_robot_level());
             }
         }
     }
