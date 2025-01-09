@@ -13,6 +13,7 @@ public class Referee_UI : MonoBehaviour
     [SerializeField] private Buy_bullet_UI buy_bullet;
     [SerializeField] private Rule_message_UI rule_message;
     [SerializeField] private Win_UI win_ui;
+    [SerializeField] private kill_memsage_UI kill_memsage;
     private GameObject robot;
     private UI_parent parent;
     private Robot_Case robot_case;
@@ -123,6 +124,8 @@ public class Referee_UI : MonoBehaviour
                     rule.Get_Win_Points(Robot_color.RED), rule.Get_Win_Points(Robot_color.BLUE),
                     rule.Get_time(), rule.Get_State());
                 rule_message.Set_Robot_Data(rule.red1, rule.blue1, rule.red3, rule.blue3);
+                kill_memsage.Set_Kill_Memsage(rule.killMemsageUpdate,rule.KillMemsages[rule.killNum].killer_nickname,rule.KillMemsages[rule.killNum].killed_nickname);
+                rule.killMemsageUpdate = false;
             }
 
             if (rule.gameState == Game_State.BlueWin || rule.gameState == Game_State.RedWin)

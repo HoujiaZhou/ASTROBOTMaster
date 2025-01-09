@@ -608,6 +608,7 @@ public class Referee_control : MonoBehaviourPun
                     string refereename = robot_Chassis.damage_Log.LastDamagenickname;
                     rule.photonView.RPC("Kill_Get_Xp",RpcTarget.All,refereename,level_system.level);
                     rule.photonView.RPC("Add_WinPoint",RpcTarget.All,refereename,20);
+                    rule.Kill_Memsage_Updata(refereename,referee_nickname);
                     robot_Chassis.deadFlag = false;
                 }
             }

@@ -11,6 +11,8 @@ public class Win_UI:MonoBehaviourPun
     private UI_parent parent;
     public void OnExitRoom()
     {
+        PhotonNetwork.CurrentRoom.IsOpen = true;
+        PhotonNetwork.CurrentRoom.IsVisible = true;
         parent.Set_Game_State(false);
         GameObject cameraObject = new GameObject("Main Camera");
         Camera camera = cameraObject.AddComponent<Camera>();

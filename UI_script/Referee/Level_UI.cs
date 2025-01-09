@@ -22,7 +22,6 @@ public class Level_UI : MonoBehaviour
     }
     public void set_level(int nowlevel, int now_exp, int next_exp,string nickname)
     {
-        Debug.Log(nickname);
         if(nowlevel < 9)
             level_fill.fillAmount = (float)now_exp / (float)next_exp / 2.0f; 
         else level_fill.fillAmount = 1;

@@ -19,6 +19,10 @@ public struct Robot_Data
     public int MaxHp, Hp, WinPoint, level;
 }
 
+public struct Kill_Memsage
+{
+    public string killer_nickname,killed_nickname;
+}
 public class Rule_RMUL2025 : MonoBehaviourPun
 {
     public float gameRunningTime, gameTime;
@@ -28,9 +32,20 @@ public class Rule_RMUL2025 : MonoBehaviourPun
     public Robot_Data red1, blue1, red3, blue3;
     private float lastTime;
     public Referee_control localRobot;
+    public Kill_Memsage[] KillMemsages = new Kill_Memsage[100];
+    public int killNum;
+    public bool killMemsageUpdate;
     [SerializeField] Center_buff center_buff;
     [SerializeField] Supply_buff supply_buff_red, Supply_buff_blue;
 
+    [PunRPC]
+    public void Sync_Kill_memsage(string killer_nickname, string killed_nickname,int killNum)
+    {
+        KillMemsages[killNum].killer_nickname = killer_nickname;
+        KillMemsages[killNum].killed_nickname = killed_nickname;
+        this.killNum = killNum;
+        killMemsageUpdate = true;
+    }
     [PunRPC]
     public void Kill_Get_Xp(string nickname, int level)
     {
@@ -82,6 +97,12 @@ public class Rule_RMUL2025 : MonoBehaviourPun
         }
     }
 
+    public void Kill_Memsage_Updata(string killer_nickname, string killed_nickname)
+    {
+        KillMemsages[++killNum].killer_nickname = killer_nickname;
+        KillMemsages[killNum].killed_nickname = killed_nickname;
+        photonView.RPC("Sync_Kill_memsage", RpcTarget.All, killer_nickname, killed_nickname,killNum);
+    }
     private void Winponit_Settle()
     {
         redWinPoints = red1.WinPoint + red3.WinPoint;
@@ -140,7 +161,8 @@ public class Rule_RMUL2025 : MonoBehaviourPun
         blueGold = 0;
         gameRunningTime = 0;
         gameTime = 60 * 5;
-
+        killNum = 0;
+        killMemsageUpdate = false;
         StartCoroutine(ExecutePeriodically());
     }
 
@@ -307,6 +329,7 @@ public class Rule_RMUL2025 : MonoBehaviourPun
         if (!PhotonNetwork.IsMasterClient)
         {
             gameRunningTime += Time.deltaTime;
+            Winponit_Settle();
             lastTime = gameRunningTime;
         }
         else
