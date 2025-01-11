@@ -3,8 +3,7 @@ using UnityEngine;
 
 public class Shoot_referee : MonoBehaviourPun
 {
-    private int[] Max_heat_ ={200,250,300,350,400,450,500,550,600,650};
-    private int[] cooling_rate_ ={10,15,20,25,30,35,40,45,50,60};
+
     private int level = 0;
     public Referee_control referee;
     private int allow_bullet_num = 0;
@@ -47,6 +46,12 @@ public class Shoot_referee : MonoBehaviourPun
     {
         return referee.Get_nickname();
     }
+
+    public void Set_Shoot_Referee(int maxHeat, int coolRate)
+    {
+        Max_heat = maxHeat;
+        cooling_rate = coolRate;
+    }
     public bool Shoot_permission()
     {
         if (allow_bullet_num > shoot_num)
@@ -71,8 +76,7 @@ public class Shoot_referee : MonoBehaviourPun
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        Max_heat = Max_heat_[level];
-        cooling_rate= cooling_rate_[level];
+
         allow_bullet_num = 0;
         shoot_num = 0;
     }
@@ -83,8 +87,6 @@ public class Shoot_referee : MonoBehaviourPun
     {
         if(!photonView.IsMine)return;
         level = referee.Get_robot_level();
-        Max_heat = Max_heat_[level];
-        cooling_rate= cooling_rate_[level];
         if(referee.Get_robotHP()==0)
         {
             now_heat=0;

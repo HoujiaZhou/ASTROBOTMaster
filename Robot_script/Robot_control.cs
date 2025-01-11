@@ -4,6 +4,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using Photon.Pun;
 
+
 public enum Chassis_Mode
 {
     Normal_mode = 0,
@@ -12,6 +13,7 @@ public enum Chassis_Mode
 
 public class Chassis_Data
 {
+    
     public Chassis_Mode Chassis_Mode;
     public float Vx_Speed, Vy_Speed, Vw_Speed;
     private int Max_speed;
@@ -178,14 +180,26 @@ public class Shoot_Data
 
 public class Robot_control : MonoBehaviourPun
 {
-    int[] MaxSpeedPreLevel = { 100, 120, 150, 180, 200, 230, 250, 280, 300, 320 };
+    private float initSensitivityX= 300f, initSensitivityY= 300f;
     public float SensitivityX = 300f, SensitivityY = 300f;
     public bool iscontrol = true;
     public Gimbal_Data gimbal = new Gimbal_Data(0, 0);
     public Chassis_Data chassis = new Chassis_Data();
     public Shoot_Data shoot = new Shoot_Data();
     [SerializeField] private Referee_control referee_;
+    private int maxSpeed;
 
+    public void Set_MaxSpeed(int speed)
+    {
+        maxSpeed = speed;
+    }
+
+    public void Set_Sensitivity(float num)
+    {
+        SensitivityX = initSensitivityX * num;
+        SensitivityY = initSensitivityY * num;
+        gimbal.Set_sensitiviy(SensitivityX, SensitivityY);
+    }
     void Start()
     {
         if (!photonView.IsMine) return;
@@ -206,7 +220,7 @@ public class Robot_control : MonoBehaviourPun
     {
         if (!photonView.IsMine && PhotonNetwork.IsConnected == true) return;
 
-        chassis.Set_Maxspeed(MaxSpeedPreLevel[referee_.Get_robot_level()]);
+        chassis.Set_Maxspeed(maxSpeed);
         chassis.UpdateChassis_data(iscontrol);
         gimbal.UpdataGimbal_Data(iscontrol);
         shoot.UpdataShoot_Data(iscontrol);

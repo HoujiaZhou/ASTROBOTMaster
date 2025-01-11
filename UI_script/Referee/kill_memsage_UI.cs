@@ -16,8 +16,11 @@ public class kill_memsage_UI : MonoBehaviour
     {
         this.killerName = killer_name;
         this.killedName = killed_name;
+
         if (update)
         {
+            Destroy(killerObject);
+            Destroy(killedObject);
             RectTransform rectTransform;
             gameObject.SetActive(true);
             tickTime = 10.0f;
