@@ -6,4 +6,7 @@ Beta 1.2 [添加了更好的UI，现在可以完整的体验一整个对局了] 
 
 Beta 1.3 [实现了更好的对战环境，更加附和现实。实现了击杀ui，大小还需改善]  https://pan.quark.cn/s/6062ac34560c 提取码：Cfrq
 
-Beta 1.5 [更改了各项数值，现在他们都是比赛的真实数值了，添加了P键控制面板] https://pan.quark.cn/s/5578175621b6  提取码：DhrB
+Beta 1.4 [更改了各项数值，现在他们都是比赛的真实数值了，添加了P键控制面板] https://pan.quark.cn/s/5578175621b6  提取码：DhrB
+
+UC
+Beta 1.0[以联盟赛的规则，在UC的场地里对抗]  https://pan.quark.cn/s/e8412121644e 提取码：JdUR
