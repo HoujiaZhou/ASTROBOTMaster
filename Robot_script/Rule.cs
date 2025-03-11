@@ -23,8 +23,22 @@ public struct Kill_Memsage
 {
     public string killer_nickname,killed_nickname;
 }
-public class Rule_RMUL2025 : MonoBehaviourPun
+public class Rule_RMUC2025 : MonoBehaviourPun
 {
+    int[] chassis_HPlevel_Powerfirst_Infantry = { 150, 175, 200, 225, 250, 275, 300, 325, 350, 400 };
+    int[] chassis_HPlevel_HPfirst_Infantry = { 200, 225, 250, 275, 300, 325, 350, 375, 400, 400 };
+    int[] chassis_HPlevel_Powerfirst_Hero = { 200, 225, 250, 275, 300, 325, 350, 375, 400, 500 };
+    int[] chassis_HPlevel_HPfirst_Hero = { 250, 275, 300, 325, 350, 375, 400, 425, 450, 500 };
+    int[] chassis_Powerlevel_HPfirst_Infantry = { 85, 95, 105, 115, 125, 135, 145, 155, 165, 200 };
+    int[] chassis_Powerlevel_Powerfirst_Infantry = { 110, 130, 140, 150, 160, 170, 180, 190, 195, 200 };
+    int[] chassis_Powerlevel_HPfirst_Hero = { 85, 95, 105, 115, 125, 135, 145, 155, 165, 200 };
+    int[] chassis_Powerlevel_Powerfirst_Hero = { 110, 130, 140, 150, 160, 170, 180, 190, 195, 200 };
+    int[] shoot_Coolrate_Coolfirst_Infantry = { 40, 45, 50, 55, 60, 65, 70, 75, 80, 80 };
+    int[] shoot_Heat_Coolfirst_Infantry = { 50, 85, 120, 155, 190, 225, 260, 295, 330, 400 };
+    int[] shoot_Coolrate_Heatfirst_Infantry = { 10, 15, 20, 25, 30, 35, 40, 45, 50, 60 };
+    int[] shoot_Heat_Heatfirst_Infantry = { 200, 250, 300, 350, 400, 450, 500, 550, 600, 650 };
+    int[] shoot_Coolrate_Hero = { 40, 48, 56, 64, 72, 80, 88, 96, 104, 120 };
+    int[] shoot_Heat_Hero = { 200, 230, 260, 290, 320, 350, 380, 410, 440, 500 };
     public float gameRunningTime, gameTime;
     public int redGold, blueGold;
     public int redWinPoints, blueWinPoints;
@@ -37,7 +51,103 @@ public class Rule_RMUL2025 : MonoBehaviourPun
     public bool killMemsageUpdate;
     [SerializeField] Center_buff center_buff;
     [SerializeField] Supply_buff supply_buff_red, Supply_buff_blue;
+    public int Get_MaxHp(Chassis_Referee_type chassis, Robot_type type, int level)
+    {
+        if (type == Robot_type.Infantry)
+        {
+            if (chassis == Chassis_Referee_type.PowerFirst)
+            {
+                return chassis_HPlevel_Powerfirst_Infantry[level];
+            }
+            else
+            {
+                return chassis_HPlevel_HPfirst_Infantry[level];
+            }
+        }
+        else if (type == Robot_type.Hero)
+        {
+            if (chassis == Chassis_Referee_type.PowerFirst)
+            {
+                return chassis_HPlevel_Powerfirst_Hero[level];
+            }
+            else
+            {
+                return chassis_HPlevel_HPfirst_Hero[level];
+            }
+        }
+        else if (type == Robot_type.Outpost)
+        {
+            return 1500;
+        }
+        else return 0;
+    }
 
+    public int Get_MaxPower(Chassis_Referee_type chassis, Robot_type type, int level)
+    {
+        if (type == Robot_type.Infantry)
+        {
+            if (chassis == Chassis_Referee_type.PowerFirst)
+            {
+                return chassis_Powerlevel_Powerfirst_Infantry[level];
+            }
+            else
+            {
+                return chassis_Powerlevel_HPfirst_Infantry[level];
+            }
+        }
+        else if (type == Robot_type.Hero)
+        {
+            if (chassis == Chassis_Referee_type.PowerFirst)
+            {
+                return chassis_Powerlevel_Powerfirst_Hero[level];
+            }
+            else
+            {
+                return chassis_Powerlevel_HPfirst_Hero[level];
+            }
+        }
+        else return 0;
+    }
+
+    public int Get_CoolRate(Shoot_Referee_type chassis, Robot_type type, int level)
+    {
+        if (type == Robot_type.Infantry)
+        {
+            if (chassis == Shoot_Referee_type.CoolFirst)
+            {
+                return shoot_Coolrate_Coolfirst_Infantry[level];
+            }
+            else
+            {
+                return shoot_Coolrate_Heatfirst_Infantry[level];
+            }
+        }
+        else if (type == Robot_type.Hero)
+        {
+            return shoot_Coolrate_Hero[level];
+        }
+        else return 0;
+    }
+
+    public int Get_MaxHeat(Shoot_Referee_type chassis, Robot_type type, int level)
+    {
+        if (type == Robot_type.Infantry)
+        {
+            if (chassis == Shoot_Referee_type.CoolFirst)
+            {
+                return shoot_Heat_Coolfirst_Infantry[level];
+            }
+            else
+            {
+                return shoot_Heat_Heatfirst_Infantry[level];
+            }
+        }
+        else if (type == Robot_type.Hero)
+        {
+            return shoot_Heat_Hero[level];
+        }
+        else return 0;
+    }
     [PunRPC]
     public void Sync_Kill_memsage(string killer_nickname, string killed_nickname,int killNum)
     {
@@ -53,6 +163,21 @@ public class Rule_RMUL2025 : MonoBehaviourPun
         {
             localRobot.Kill_Xp(level);
         }
+    }
+    [PunRPC]
+    public void Give_Xp(string nickname, int xp)
+    {
+        if (localRobot.Get_nickname() == nickname)
+        {
+            localRobot.Add_Exp(xp);
+        }
+
+        if (nickname == "")
+        {
+            localRobot.Add_Exp(xp / 3);
+        }
+        //前哨站被击毁给予经验
+        
     }
 
     [PunRPC]
@@ -160,7 +285,7 @@ public class Rule_RMUL2025 : MonoBehaviourPun
         redGold = 0;
         blueGold = 0;
         gameRunningTime = 0;
-        gameTime = 60 * 5;
+        gameTime = 60 * 7;
         killNum = 0;
         killMemsageUpdate = false;
         StartCoroutine(ExecutePeriodically());
@@ -199,7 +324,7 @@ public class Rule_RMUL2025 : MonoBehaviourPun
         redGold = 0;
         blueGold = 0;
         gameRunningTime = 0;
-        gameTime = 60 * 5;
+        gameTime = 60 * 7;
         photonView.RPC("Sync_Game_state", RpcTarget.Others, gameState);
     }
 
@@ -314,15 +439,15 @@ public class Rule_RMUL2025 : MonoBehaviourPun
     {
         if (gameState != Game_State.Running)
         {
-            center_buff.Set_Work(false);
-            supply_buff_red.Set_Work(false);
-            Supply_buff_blue.Set_Work(false);
+            if(center_buff)center_buff.Set_Work(false);
+            if(supply_buff_red)supply_buff_red.Set_Work(false);
+            if(Supply_buff_blue)Supply_buff_blue.Set_Work(false);
         }
         else
         {
-            center_buff.Set_Work(true);
-            supply_buff_red.Set_Work(true);
-            Supply_buff_blue.Set_Work(true);
+            if(center_buff)center_buff.Set_Work(true);
+            if(supply_buff_red)supply_buff_red.Set_Work(true);
+            if(Supply_buff_blue)Supply_buff_blue.Set_Work(true);
         }
 
         if (gameState == Game_State.Unprepared) return;
