@@ -32,7 +32,8 @@ public class Robot_UI : MonoBehaviour
     void OnGUI()
     {
         if (!robot_data) return;
-        Super_cap.fillAmount = (robot_data.chassis.Super_cap_Max_time - robot_data.chassis.Super_cap_used_time) / robot_data.chassis.Super_cap_Max_time;
+        Super_cap.fillAmount = (robot_data.chassis.superCapCapacity - robot_data.chassis.superCapCapacityUsed) /
+                                robot_data.chassis.superCapCapacity;
         if (robot_data.chassis.Is_using_Cap == true)
         {
             Super_cap.color = Color.red;

@@ -35,7 +35,7 @@ public class Chassis_control_Hero : MonoBehaviourPun
             vw_Pid = pID.Creat_PID();
             vx_Pid.Set_parameter(wheel_Kp, wheel_Ki, wheel_Kd,120000);
             vy_Pid.Set_parameter(wheel_Kp, wheel_Ki, wheel_Kd,120000);
-            vw_Pid.Set_parameter(rotate_kp, rotate_ki, rotate_kd,500000);
+            vw_Pid.Set_parameter(rotate_kp, rotate_ki, rotate_kd,2000000);
             vx_Pid.Set_measure(movebody.linearVelocity.x);
             vy_Pid.Set_measure(movebody.linearVelocity.z);
             vw_Pid.Set_measure(movebody.angularVelocity.y);
@@ -100,22 +100,6 @@ public class Chassis_control_Hero : MonoBehaviourPun
                     Angle_chassis += (float)Math.PI * 2;
                 }
             }
-            if (chassis_Data.chassis.Chassis_Mode == Chassis_Mode.Normal_mode)
-            {
-                Vw_Speed += 1 * (Angle_gimbal - Angle_chassis);
-                while (Vw_Speed > (float)Math.PI || Vw_Speed < -(float)Math.PI)
-                {
-                    if (Vw_Speed > (float)Math.PI)
-                    {
-                        Vw_Speed -= (float)Math.PI * 2;
-                    }
-                    if (Vw_Speed < -(float)Math.PI)
-                    {
-                        Vw_Speed += (float)Math.PI * 2;
-                    }
-                }
-                Vw_Speed *= 5;
-            }
             movement.x = - (Vy_Speed * (float)Math.Cos(Angle_gimbal) + Vx_Speed * (float)Math.Sin(Angle_gimbal));
             movement.z = - (-Vy_Speed * (float)Math.Sin(Angle_gimbal) + Vx_Speed * (float)Math.Cos(Angle_gimbal));
             vx_Pid.Set_target(movement.x);
@@ -141,7 +125,7 @@ public class Chassis_control_Hero : MonoBehaviourPun
             else if (!Isgroud)
             {
                 Isgroud_time += Time.deltaTime;
-                movebody.AddForce(0, -9.8f * 100, 0, ForceMode.Acceleration);
+                // movebody.AddForce(0, -9.8f * 100, 0, ForceMode.Acceleration);
                 if (Isgroud_time >= 5)
                 {
                     movebody_.eulerAngles = new Vector3(0, movebody_.eulerAngles.y, 0);

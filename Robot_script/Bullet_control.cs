@@ -38,12 +38,13 @@ public class Bullet_control : MonoBehaviourPun
     }
     void FixedUpdate()
     {
-        GetComponent<Rigidbody>().AddForce(0, -9.8f * 100, 0, ForceMode.Acceleration);
+        GetComponent<Rigidbody>().AddForce(0, -3.09f  * 100, 0, ForceMode.Acceleration);
     }
     void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag("Armour") && attacked_enable&&local_nickname == shooter_nickname)
         {
+            int damageRate = referee.Get_DamageRate();
             
             armour_control armour = collision.gameObject.GetComponent<armour_control>();
             if (armour == null)
@@ -53,18 +54,11 @@ public class Bullet_control : MonoBehaviourPun
             else
             {
 
-                armour.photonView.RPC("armour_attacked_PUN", RpcTarget.All, robot_type,shooter_nickname);
+                armour.photonView.RPC("armour_attacked_PUN", RpcTarget.All, robot_type,shooter_nickname,damageRate);
             }
             if (referee != null)
             {
-                if (robot_type == Robot_type.Hero)
-                {
-                    referee.Add_Exp( 400 * (100 - armour.Get_robot_defense_buff()) / 100);
-                }
-                else
-                {
-                    referee.Add_Exp(40 * (100 - armour.Get_robot_defense_buff()) / 100);
-                }
+                
             }
             else
             {
@@ -77,7 +71,7 @@ public class Bullet_control : MonoBehaviourPun
     {
         if (collision.gameObject.CompareTag("Armour") && attacked_enable&&local_nickname == shooter_nickname)
         {
-            Debug.Log("发生了触发检测");
+            int damageRate = referee.Get_DamageRate();
             armour_control armour = collision.gameObject.GetComponent<armour_control>();
             if (armour == null)
             {
@@ -85,22 +79,29 @@ public class Bullet_control : MonoBehaviourPun
             }
             else
             {
-                armour.photonView.RPC("armour_attacked_PUN", RpcTarget.All, robot_type,shooter_nickname);
+                armour.photonView.RPC("armour_attacked_PUN", RpcTarget.All, robot_type,shooter_nickname,damageRate);
             }
             if (referee != null)
             {
-                if (robot_type == Robot_type.Hero)
-                {
-                    referee.Add_Exp( 400 * (100 - armour.Get_robot_defense_buff()) / 100);
-                }
-                else
-                {
-                    referee.Add_Exp(40 * (100 - armour.Get_robot_defense_buff()) / 100);
-                }
+                
             }
             else
             {
                 Debug.LogWarning("弹丸没有检测到发出对象");
+            }
+            attacked_enable = false;
+        }
+
+        if (collision.gameObject.CompareTag("CenterBuff") && attacked_enable && local_nickname == shooter_nickname&&robot_type  == Robot_type.Infantry)
+        {
+            CenterBuff_collider centerBuff = collision.gameObject.GetComponent<CenterBuff_collider>();
+            if (centerBuff == null)
+            {
+                Debug.LogWarning("能量机关没有控制组件");
+            }
+            else
+            {
+                centerBuff.HitCenter();
             }
             attacked_enable = false;
         }

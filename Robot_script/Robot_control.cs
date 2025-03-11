@@ -3,6 +3,8 @@ using NUnit.Framework.Constraints;
 using Unity.VisualScripting;
 using UnityEngine;
 using Photon.Pun;
+using Unity.Mathematics;
+using Math = System.Math;
 
 
 public enum Chassis_Mode
@@ -13,14 +15,14 @@ public enum Chassis_Mode
 
 public class Chassis_Data
 {
-    
     public Chassis_Mode Chassis_Mode;
     public float Vx_Speed, Vy_Speed, Vw_Speed;
     private int Max_speed;
     private int Speed;
     public bool Is_using_Cap;
-    public float Super_cap_used_time = 0f, Super_cap_Max_time = 8f;
+    public float superCapSpeed, superCapCapacity, superCapCapacityUsed;
     private float last_time, deltatime;
+    private float Angle_gimbal, Angle_chassis;
 
     public Chassis_Data()
     {
@@ -34,20 +36,87 @@ public class Chassis_Data
         Max_speed = maxspeed;
     }
 
+    public void SetCap(float capacity, float speed)
+    {
+        superCapCapacity = capacity;
+        superCapSpeed = speed;
+    }
+
+    public void Set_Angle(float chassisAngle, float gimbalAngle)
+    {
+        Angle_gimbal = gimbalAngle;
+        Angle_chassis = chassisAngle;
+    }
+
     public void UpdateChassis_data(bool iscontrol)
     {
         if (iscontrol)
         {
-            deltatime = Time.deltaTime;
-            Vx_Speed = -Input.GetAxis("Vertical") * Speed;
-            Vy_Speed = -Input.GetAxis("Horizontal") * Speed;
-            if (Vx_Speed * Vx_Speed + Vy_Speed * Vy_Speed > Speed * Speed)
+            float time = Time.time;
+            deltatime = time - last_time;
+            last_time = time;
+
+
+            while (Angle_gimbal > (float)Math.PI || Angle_gimbal < -(float)Math.PI)
             {
-                float vx = Vx_Speed, vy = Vy_Speed;
-                Vx_Speed = Speed * (vx / Mathf.Sqrt(vx * vx + vy * vy));
-                Vy_Speed = Speed * (vy / Mathf.Sqrt(vx * vx + vy * vy));
+                if (Angle_gimbal > (float)Math.PI)
+                {
+                    Angle_gimbal -= (float)Math.PI * 2;
+                }
+
+                if (Angle_gimbal < -(float)Math.PI)
+                {
+                    Angle_gimbal += (float)Math.PI * 2;
+                }
             }
 
+            while (Angle_chassis > (float)Math.PI || Angle_chassis < -(float)Math.PI)
+            {
+                if (Angle_chassis > (float)Math.PI)
+                {
+                    Angle_chassis -= (float)Math.PI * 2;
+                }
+
+                if (Angle_chassis < -(float)Math.PI)
+                {
+                    Angle_chassis += (float)Math.PI * 2;
+                }
+            }
+
+            if (Chassis_Mode == Chassis_Mode.Normal_mode)
+            {
+                Vw_Speed = 1 * (Angle_gimbal - Angle_chassis);
+                while (Vw_Speed > (float)Math.PI || Vw_Speed < -(float)Math.PI)
+                {
+                    if (Vw_Speed > (float)Math.PI)
+                    {
+                        Vw_Speed -= (float)Math.PI * 2;
+                    }
+
+                    if (Vw_Speed < -(float)Math.PI)
+                    {
+                        Vw_Speed += (float)Math.PI * 2;
+                    }
+                }
+
+                Vw_Speed *= 5;
+            }
+            else if (Chassis_Mode == Chassis_Mode.Rotate_mode)
+            {
+                Vw_Speed = 8;
+            }
+
+            Vx_Speed = -Input.GetAxis("Vertical") * Speed;
+            Vy_Speed = -Input.GetAxis("Horizontal") * Speed;
+            if (Vx_Speed * Vx_Speed + Vy_Speed * Vy_Speed + Vw_Speed * Vw_Speed * 400 > Speed * Speed)
+            {
+                float vx = Vx_Speed, vy = Vy_Speed, vw = Vw_Speed;
+                Vx_Speed = Speed * (vx / Mathf.Sqrt(vx * vx + vy * vy + Vw_Speed * Vw_Speed * 400));
+                Vy_Speed = Speed * (vy / Mathf.Sqrt(vx * vx + vy * vy + Vw_Speed * Vw_Speed * 400));
+                Vw_Speed = Speed * (vw / Mathf.Sqrt(vx * vx + vy * vy + Vw_Speed * Vw_Speed * 400));
+            }
+
+            
             if (Input.GetKeyDown(KeyCode.C))
             {
                 if (Chassis_Mode == Chassis_Mode.Rotate_mode)
@@ -60,9 +129,10 @@ public class Chassis_Data
                 }
             }
 
+
             if (Input.GetKey(KeyCode.LeftShift))
             {
-                if (Super_cap_used_time < Super_cap_Max_time)
+                if (superCapCapacityUsed < superCapCapacity)
                 {
                     Is_using_Cap = true;
                 }
@@ -78,25 +148,26 @@ public class Chassis_Data
 
             if (Is_using_Cap == true)
             {
-                if (Vx_Speed * Vx_Speed + Vy_Speed * Vy_Speed != 0)
-                    Super_cap_used_time += Time.deltaTime;
-                Speed = Max_speed * 2;
+                if (Vx_Speed * Vx_Speed + Vy_Speed * Vy_Speed + Vw_Speed * Vw_Speed * 400 > Max_speed * Max_speed)
+                    superCapCapacityUsed += Mathf.Sqrt(Vx_Speed * Vx_Speed + Vy_Speed * Vy_Speed +
+                        Vw_Speed * Vw_Speed * 400 - Max_speed * Max_speed) * deltatime;
+                if (Max_speed * 2 < superCapSpeed)
+                {
+                    Speed = Max_speed * 2;
+                }
+                else Speed = (int)superCapSpeed;
             }
             else
             {
-                if (Super_cap_used_time > 0)
-                    Super_cap_used_time -= Time.deltaTime / 3;
-                if (Super_cap_used_time < 0) Super_cap_used_time = 0;
-                Speed = Max_speed;
-            }
+                if (Max_speed * Max_speed - Vx_Speed * Vx_Speed +
+                    Vy_Speed * Vy_Speed + 
+                    Vw_Speed * Vw_Speed * 400 >= 0)
+                    superCapCapacityUsed -= Mathf.Sqrt(Max_speed * Max_speed - Vx_Speed * Vx_Speed +
+                                                       Vy_Speed * Vy_Speed +
+                                                       Vw_Speed * Vw_Speed * 400) * deltatime;
+                if (superCapCapacityUsed < 0) superCapCapacityUsed = 0;
 
-            if (Chassis_Mode == Chassis_Mode.Rotate_mode)
-            {
-                Vw_Speed = 5;
-            }
-            else
-            {
-                Vw_Speed = 0;
+                Speed = Max_speed;
             }
         }
         else
@@ -180,13 +251,15 @@ public class Shoot_Data
 
 public class Robot_control : MonoBehaviourPun
 {
-    private float initSensitivityX= 300f, initSensitivityY= 300f;
+    private float initSensitivityX = 300f, initSensitivityY = 300f;
     public float SensitivityX = 300f, SensitivityY = 300f;
     public bool iscontrol = true;
     public Gimbal_Data gimbal = new Gimbal_Data(0, 0);
     public Chassis_Data chassis = new Chassis_Data();
     public Shoot_Data shoot = new Shoot_Data();
+    [SerializeField] private Transform chassisAngle, gimbalAngle;
     [SerializeField] private Referee_control referee_;
+    public float CapSpeed = 300, CapCapacity = 10000;
     private int maxSpeed;
 
     public void Set_MaxSpeed(int speed)
@@ -200,6 +273,7 @@ public class Robot_control : MonoBehaviourPun
         SensitivityY = initSensitivityY * num;
         gimbal.Set_sensitiviy(SensitivityX, SensitivityY);
     }
+
     void Start()
     {
         if (!photonView.IsMine) return;
@@ -219,7 +293,9 @@ public class Robot_control : MonoBehaviourPun
     void Update()
     {
         if (!photonView.IsMine && PhotonNetwork.IsConnected == true) return;
-
+        chassis.SetCap(CapCapacity, CapSpeed);
+        chassis.Set_Angle(chassisAngle.rotation.eulerAngles.y * (float)Math.PI / 180,
+            gimbalAngle.rotation.eulerAngles.y * (float)Math.PI / 180);
         chassis.Set_Maxspeed(maxSpeed);
         chassis.UpdateChassis_data(iscontrol);
         gimbal.UpdataGimbal_Data(iscontrol);

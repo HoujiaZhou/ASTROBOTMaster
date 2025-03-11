@@ -10,6 +10,8 @@ public enum Robot_type
     Hero = 0,
     Engineer,
     Infantry,
+    Outpost,
+    Base,
     Null
 };
 
@@ -68,7 +70,7 @@ public class Level_System
 {
     public int level;
     public int exp;
-    public int[] upgrade_exp = { 0, 400, 800, 1200, 1600, 2000, 2400, 2800, 3200, 4000, 99999999 };
+    public int[] upgrade_exp = { 0, 550, 1100, 1650, 2200, 2750, 3300, 3850, 4400, 5000, 99999999 };
 
     public Level_System()
     {
@@ -180,10 +182,11 @@ public class Robot_chassis
     public int buff;
     public Chassis_Referee_type chassis_mode;
     public int deadNum;
-    private Rule_RMUL2025 rule;
+    private Rule rule;
     public Damage_Log damage_Log;
     public bool deadFlag = false;
     public int aliveRate = 2;
+
     public Robot_chassis()
     {
         deadNum = 0;
@@ -193,7 +196,7 @@ public class Robot_chassis
         robot_Case = Robot_Case.Alive;
     }
 
-    public void Add_rule(Rule_RMUL2025 rule)
+    public void Add_rule(Rule rule)
     {
         this.rule = rule;
     }
@@ -203,9 +206,14 @@ public class Robot_chassis
         Supply_rate = supply_rate;
     }
 
-    public void Add_defense_buff(int defense_rate, float defense_time)
+    public void Add_defense_buff(int defense_rate, float defense_time) // 第一项1~100值代表防护倍率，第二项表示持续时间,第一项输入-1强制取消buff
     {
-        if (chassis_defense_buff < defense_rate)
+        if (defense_rate == -1)
+        {
+            chassis_defense_buff = 0;
+            defense_exist_time = 0;
+        }
+        else if (chassis_defense_buff < defense_rate)
         {
             chassis_defense_buff = defense_rate;
             defense_exist_time = -defense_time;
@@ -313,6 +321,7 @@ public struct Robot_shoot
     public int allow_bullet_num;
     public int shoot_num;
     public int Max_heat, now_heat;
+    public int damageRate;
 }
 
 public class Referee_control : MonoBehaviourPun
@@ -320,20 +329,7 @@ public class Referee_control : MonoBehaviourPun
     public Robot_type robot_type;
     public Robot_color robot_color;
     private string referee_nickname;
-    int[] chassis_HPlevel_Powerfirst_Infantry = { 150, 175, 200, 225, 250, 275, 300, 325, 350, 400 };
-    int[] chassis_HPlevel_HPfirst_Infantry = { 200, 225, 250, 275, 300, 325, 350, 375, 400, 400 };
-    int[] chassis_HPlevel_Powerfirst_Hero = { 200, 225, 250, 275, 300, 325, 350, 375, 400, 500 };
-    int[] chassis_HPlevel_HPfirst_Hero = { 250, 275, 300, 325, 350, 375, 400, 425, 450, 500 };
-    int[] chassis_Powerlevel_HPfirst_Infantry = { 85, 95, 105, 115, 125, 135, 145, 155, 165, 200 };
-    int[] chassis_Powerlevel_Powerfirst_Infantry = { 110, 130, 140, 150, 160, 170, 180, 190, 195, 200 };
-    int[] chassis_Powerlevel_HPfirst_Hero = { 85, 95, 105, 115, 125, 135, 145, 155, 165, 200 };
-    int[] chassis_Powerlevel_Powerfirst_Hero = { 110, 130, 140, 150, 160, 170, 180, 190, 195, 200 };
-    int[] shoot_Coolrate_Coolfirst_Infantry = { 40, 45, 50, 55, 60, 65, 70, 75, 80, 80 };
-    int[] shoot_Heat_Coolfirst_Infantry = { 50, 85, 120, 155, 190, 225, 260, 295, 330, 400 };
-    int[] shoot_Coolrate_Heatfirst_Infantry = { 10, 15, 20, 25, 30, 35, 40, 45, 50, 60 };
-    int[] shoot_Heat_Heatfirst_Infantry = { 200, 250, 300, 350, 400, 450, 500, 550, 600, 650 };
-    int[] shoot_Coolrate_Hero = { 40, 48, 56, 64, 72, 80, 88, 96, 104, 120 };
-    int[] shoot_Heat_Hero = { 100, 140, 180, 220, 260, 300, 340, 380, 420, 500 };
+    private bool redUnbeatMemsage = true, blueUnbeatMemsage = true;
     [SerializeField] private Chassis_control chassis_Control;
     [SerializeField] private Gimbal_control gimbal_Control;
     [SerializeField] private Shoot_control shoot_Control;
@@ -346,13 +342,15 @@ public class Referee_control : MonoBehaviourPun
     private Robot_power robot_Power = new Robot_power();
     private Robot_chassis robot_Chassis = new Robot_chassis();
     private Robot_shoot robot_Shoot;
-    public Rule_RMUL2025 rule;
+    public Rule rule;
     private Robot_control robot_Control;
     public bool initflag = false;
     public int selfWinpoint;
     public int killedNum, deadNum;
     private Chassis_Referee_type chassis_Mode = Chassis_Referee_type.empty;
     private Shoot_Referee_type shoot_Mode = Shoot_Referee_type.empty;
+    private int damageRate;
+    private float DamageRateTime;
 
     [PunRPC]
     public void Sync_referee(Robot_type robot_Type, Robot_color robot_Color, string NickName)
@@ -380,6 +378,11 @@ public class Referee_control : MonoBehaviourPun
         level_system.give_exp(exp);
     }
 
+    public void Add_Defense(int def, float time)
+    {
+        robot_Chassis.Add_defense_buff(def, time);
+    }
+
     public void Kill_Xp(int level)
     {
         killedNum++;
@@ -388,7 +391,7 @@ public class Referee_control : MonoBehaviourPun
         Add_Exp((int)(50 * (1 + 0.2f * gap)));
     }
 
-    public void Init(Robot_type robot_Type, Robot_color robot_Color, string NickName, Rule_RMUL2025 rule)
+    public void Init(Robot_type robot_Type, Robot_color robot_Color, string NickName, Rule rule)
     {
         robot_type = robot_Type;
         robot_color = robot_Color;
@@ -405,6 +408,32 @@ public class Referee_control : MonoBehaviourPun
         initflag = true;
         rule.Set_LocalRobot(this);
         StartCoroutine(ExecutePeriodically());
+    }
+
+    public void Init(Robot_type robot_Type, Robot_color robot_Color, string NickName)
+    {
+        robot_type = robot_Type;
+        robot_color = robot_Color;
+        referee_nickname = NickName;
+        robot_Chassis.Add_rule(rule);
+        selfWinpoint = 0;
+        photonView.RPC("Sync_referee", RpcTarget.Others, robot_Type, robot_Color, NickName);
+        initflag = true;
+        StartCoroutine(ExecutePeriodically());
+    }
+
+    public void Stop_control()
+    {
+        if (!robot_Control)
+            robot_Control = GetComponentInParent<Robot_control>();
+        else robot_Control.Stop_Control();
+    }
+
+    public void Enable_control()
+    {
+        if (!robot_Control)
+            robot_Control = GetComponentInParent<Robot_control>();
+        else robot_Control.Enable_Control();
     }
 
     public void Set_shoot_data(Robot_shoot shoot_data)
@@ -481,6 +510,17 @@ public class Referee_control : MonoBehaviourPun
     public int Get_robot_buff()
     {
         return robot_Chassis.buff;
+    }
+
+    public int Get_DamageRate()
+    {
+        return damageRate;
+    }
+
+    public void Set_DamageRate(int rate, float time) //直接输入添加后的伤害倍率
+    {
+        damageRate = rate;
+        DamageRateTime = time;
     }
 
     public Damage_Log Get_damage_Log()
@@ -608,117 +648,21 @@ public class Referee_control : MonoBehaviourPun
                 chassis_Mode = Chassis_Referee_type.PowerFirst;
             }
 
-            int maxHp = Get_MaxHp(chassis_Mode, robot_type, 0);
+            if (!rule)
+            {
+                GameObject rules = GameObject.FindGameObjectWithTag("Rule");
+                if (rules)
+                {
+                    rule = rules.GetComponent<Rule>();
+                }
+            }
+
+            int maxHp = rule.Get_MaxHp(chassis_Mode, robot_type, 0);
             robot_Chassis.robotHP = maxHp;
             robot_Chassis.robot_MAXHP = maxHp;
         }
     }
 
-    
-
-    public void Stop_control()
-    {
-        robot_Control.Stop_Control();
-    }
-
-    public void Enable_control()
-    {
-        robot_Control.Enable_Control();
-    }
-
-    private int Get_MaxHp(Chassis_Referee_type chassis, Robot_type type, int level)
-    {
-        if (type == Robot_type.Infantry)
-        {
-            if (chassis == Chassis_Referee_type.PowerFirst)
-            {
-                return chassis_HPlevel_Powerfirst_Infantry[level];
-            }
-            else
-            {
-                return chassis_HPlevel_HPfirst_Infantry[level];
-            }
-        }
-        else if (type == Robot_type.Hero)
-        {
-            if (chassis == Chassis_Referee_type.PowerFirst)
-            {
-                return chassis_HPlevel_Powerfirst_Hero[level];
-            }
-            else
-            {
-                return chassis_HPlevel_HPfirst_Hero[level];
-            }
-        }
-        else return 0;
-    }
-
-    private int Get_MaxPower(Chassis_Referee_type chassis, Robot_type type, int level)
-    {
-        if (type == Robot_type.Infantry)
-        {
-            if (chassis == Chassis_Referee_type.PowerFirst)
-            {
-                return chassis_Powerlevel_Powerfirst_Infantry[level];
-            }
-            else
-            {
-                return chassis_Powerlevel_HPfirst_Infantry[level];
-            }
-        }
-        else if (type == Robot_type.Hero)
-        {
-            if (chassis == Chassis_Referee_type.PowerFirst)
-            {
-                return chassis_Powerlevel_Powerfirst_Hero[level];
-            }
-            else
-            {
-                return chassis_Powerlevel_HPfirst_Hero[level];
-            }
-        }
-        else return 0;
-    }
-
-    private int Get_CoolRate(Shoot_Referee_type chassis, Robot_type type, int level)
-    {
-        if (type == Robot_type.Infantry)
-        {
-            if (chassis == Shoot_Referee_type.CoolFirst)
-            {
-                return shoot_Coolrate_Coolfirst_Infantry[level];
-            }
-            else
-            {
-                return shoot_Coolrate_Heatfirst_Infantry[level];
-            }
-        }
-        else if (type == Robot_type.Hero)
-        {
-            return shoot_Coolrate_Hero[level];
-        }
-        else return 0;
-    }
-
-    private int Get_MaxHeat(Shoot_Referee_type chassis, Robot_type type, int level)
-    {
-        if (type == Robot_type.Infantry)
-        {
-            if (chassis == Shoot_Referee_type.CoolFirst)
-            {
-                return shoot_Heat_Coolfirst_Infantry[level];
-            }
-            else
-            {
-                return shoot_Heat_Heatfirst_Infantry[level];
-            }
-        }
-        else if (type == Robot_type.Hero)
-        {
-            return shoot_Heat_Hero[level];
-        }
-        else return 0;
-    }
 
     public void Set_Sensitivity(float num)
     {
@@ -727,15 +671,14 @@ public class Referee_control : MonoBehaviourPun
 
     void Update()
     {
-        if (!photonView.IsMine) return;
-        if (!rule || !robot_Control)
+        if (!rule || (!robot_Control && (robot_type == Robot_type.Hero || robot_type == Robot_type.Infantry)))
         {
             if (!rule)
             {
                 GameObject rules = GameObject.FindGameObjectWithTag("Rule");
                 if (rules)
                 {
-                    rule = rules.GetComponent<Rule_RMUL2025>();
+                    rule = rules.GetComponent<Rule>();
                 }
             }
 
@@ -748,47 +691,151 @@ public class Referee_control : MonoBehaviourPun
         {
             if (initflag == false)
             {
-                Stop_control();
                 return;
             } // 在为初始化之前不进行操作
 
-            if (robot_Chassis.Update())
+            if (robot_type == Robot_type.Hero || robot_type == Robot_type.Infantry)
             {
-            }
+                if (!photonView.IsMine) return;
+                if (robot_Chassis.Update())
+                {
+                }
 
-            if (robot_Chassis.deadFlag == true)
+
+                if (robot_Chassis.deadFlag == true)
+                {
+                    string refereename = robot_Chassis.damage_Log.LastDamagenickname;
+                    rule.photonView.RPC("Kill_Get_Xp", RpcTarget.All, refereename, level_system.level);
+                    // rule.photonView.RPC("Add_WinPoint", RpcTarget.All, refereename, 20);
+                    rule.Kill_Memsage_Updata(refereename, referee_nickname);
+                    robot_Chassis.deadFlag = false;
+                }
+
+                robot_Power.Check_power(robot_Chassis.robot_Case);
+                robot_Power.Update(robot_type);
+                if (level_system.Update())
+                {
+                }
+
+                if (DamageRateTime > 0)
+                {
+                    DamageRateTime -= Time.deltaTime;
+                }
+                else
+                {
+                    damageRate = 100;
+                    DamageRateTime = 0;
+                }
+
+                int maxHp = rule.Get_MaxHp(chassis_Mode, robot_type, level_system.level);
+                int maxPower = rule.Get_MaxPower(chassis_Mode, robot_type, level_system.level);
+                int coolRate = rule.Get_CoolRate(shoot_Mode, robot_type, level_system.level);
+                int maxHeat = rule.Get_MaxHeat(shoot_Mode, robot_type, level_system.level);
+                if (robot_Chassis.robot_MAXHP < maxHp)
+                {
+                    robot_Chassis.robotHP += maxHp - robot_Chassis.robot_MAXHP;
+                    robot_Chassis.robot_MAXHP = maxHp;
+                }
+
+                robot_Control.Set_MaxSpeed(maxPower);
+                shootReferee.Set_Shoot_Referee(maxHeat, coolRate);
+                int newhp = robot_Chassis.robotHP;
+            }
+            else
             {
-                string refereename = robot_Chassis.damage_Log.LastDamagenickname;
-                rule.photonView.RPC("Kill_Get_Xp", RpcTarget.All, refereename, level_system.level);
-                rule.photonView.RPC("Add_WinPoint", RpcTarget.All, refereename, 20);
-                rule.Kill_Memsage_Updata(refereename, referee_nickname);
-                robot_Chassis.deadFlag = false;
-            }
+                if (!PhotonNetwork.IsMasterClient) return;
+                if (robot_type == Robot_type.Base)
+                {
+                    if (robot_color == Robot_color.RED)
+                    {
+                        if (rule.redOutpost.Hp > 0)
+                        {
+                            robot_Chassis.Add_defense_buff(100, 1);
+                        }
+                        else
+                        {
+                            if (redUnbeatMemsage && robot_Chassis.chassis_defense_buff == 100)
+                            {
+                                redUnbeatMemsage = false;
+                                rule.Send_Memsage("红方基地无敌已失效", 5);
+                            }
 
-            robot_Power.Check_power(robot_Chassis.robot_Case);
-            robot_Power.Update(robot_type);
-            if (level_system.Update())
-            {
-            }
+                            robot_Chassis.Add_defense_buff(-1, 1);
+                        }
+                    }
 
-            int maxHp = Get_MaxHp(chassis_Mode, robot_type, level_system.level);
-            int maxPower = Get_MaxPower(chassis_Mode, robot_type, level_system.level);
-            int coolRate = Get_CoolRate(shoot_Mode, robot_type, level_system.level);
-            int maxHeat = Get_MaxHeat(shoot_Mode, robot_type, level_system.level);
-            Debug.Log(maxHeat);
-            if (robot_Chassis.robot_MAXHP < maxHp)
-            {
-                robot_Chassis.robotHP += maxHp - robot_Chassis.robot_MAXHP;
-                robot_Chassis.robot_MAXHP = maxHp;
-            }
+                    if (robot_color == Robot_color.BLUE)
+                    {
+                        if (rule.blueOutpost.Hp > 0)
+                        {
+                            robot_Chassis.Add_defense_buff(100, 1);
+                        }
+                        else
+                        {
+                            if (blueUnbeatMemsage && robot_Chassis.chassis_defense_buff == 100)
+                            {
+                                blueUnbeatMemsage = false;
+                                rule.Send_Memsage("蓝方基地无敌已失效", 5);
+                            }
 
-            robot_Control.Set_MaxSpeed(maxPower);
-            shootReferee.Set_Shoot_Referee(maxHeat, coolRate);
-            int newhp = robot_Chassis.robotHP;
+                            robot_Chassis.Add_defense_buff(-1, 1);
+                        }
+                    }
+                }
+
+                if (robot_Chassis.Update())
+                {
+                }
+
+                if (robot_Chassis.deadFlag == true && robot_type != Robot_type.Base)
+                {
+                    string refereename = robot_Chassis.damage_Log.LastDamagenickname;
+                    rule.Kill_Memsage_Updata(refereename, referee_nickname);
+                    robot_Chassis.deadFlag = false;
+                }
+
+                int maxHp = rule.Get_MaxHp(chassis_Mode, robot_type, level_system.level);
+                if (robot_Chassis.robot_MAXHP < maxHp)
+                {
+                    robot_Chassis.robotHP += maxHp - robot_Chassis.robot_MAXHP;
+                    robot_Chassis.robot_MAXHP = maxHp;
+                }
+            }
         }
     }
+
     void Start()
     {
+        if (robot_type == Robot_type.Outpost)
+        {
+            if (robot_color == Robot_color.RED)
+            {
+                referee_nickname = "RedOutpost";
+            }
+
+            if (robot_color == Robot_color.BLUE)
+            {
+                referee_nickname = "BlueOutpost";
+            }
+
+            Init(robot_type, robot_color, referee_nickname);
+        }
+
+        if (robot_type == Robot_type.Base)
+        {
+            if (robot_color == Robot_color.RED)
+            {
+                referee_nickname = "RedBase";
+            }
+
+            if (robot_color == Robot_color.BLUE)
+            {
+                referee_nickname = "BlueBase";
+            }
+
+            Init(robot_type, robot_color, referee_nickname);
+        }
+
         Set_Chassis_Referee(Chassis_Referee_type.PowerFirst);
         Set_Shoot_Referee(Shoot_Referee_type.CoolFirst);
         robot_Power.chassis_Control = chassis_Control;
@@ -798,18 +845,35 @@ public class Referee_control : MonoBehaviourPun
         robot_Power.gimbal_Control_Hero = gimbal_Control_Hero;
         robot_Power.shoot_Control_Hero = shoot_Control_Hero;
     }
+
     IEnumerator ExecutePeriodically()
     {
         while (true)
         {
-            yield return new WaitForSeconds(0.2f);
-            if (photonView.IsMine)
+            yield return new WaitForSeconds(0.25f);
+            if (robot_type == Robot_type.Hero || robot_type == Robot_type.Infantry)
             {
-                photonView.RPC("Sync_level", RpcTarget.Others, level_system.level);
-                photonView.RPC("Sync_Chassis_data", RpcTarget.Others, robot_Chassis.robotHP,
-                    robot_Chassis.chassis_defense_buff);
-                rule.Set_Robot_Data(referee_nickname, robot_Chassis.robot_MAXHP, robot_Chassis.robotHP, selfWinpoint,
-                    Get_robot_level());
+                if (photonView.IsMine)
+                {
+                    photonView.RPC("Sync_level", RpcTarget.Others, level_system.level);
+                    photonView.RPC("Sync_Chassis_data", RpcTarget.Others, robot_Chassis.robotHP,
+                        robot_Chassis.chassis_defense_buff);
+                    rule.Set_Robot_Data(referee_nickname, robot_Chassis.robot_MAXHP, robot_Chassis.robotHP,
+                        selfWinpoint,
+                        Get_robot_level());
+                }
+            }
+
+            else
+            {
+                if (PhotonNetwork.IsConnected && PhotonNetwork.IsMasterClient)
+                {
+                    photonView.RPC("Sync_Chassis_data", RpcTarget.Others, robot_Chassis.robotHP,
+                        robot_Chassis.chassis_defense_buff);
+                    rule.Set_Robot_Data(referee_nickname, robot_Chassis.robot_MAXHP, robot_Chassis.robotHP,
+                        selfWinpoint,
+                        Get_robot_level());
+                }
             }
         }
     }

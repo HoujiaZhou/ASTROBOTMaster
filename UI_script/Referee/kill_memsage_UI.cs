@@ -9,7 +9,7 @@ public class kill_memsage_UI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI killedText;
     private float tickTime;
     private string killerName, killedName;
-    [SerializeField] private GameObject red1, red2, blue1, blue2;
+    [SerializeField] private GameObject red1, red2, blue1, blue2,blue4,red4,blueOutpost,redOutpost;
     private GameObject killerObject, killedObject;
 
     public void Set_Kill_Memsage(bool update, string killer_name, string killed_name)
@@ -40,6 +40,12 @@ public class kill_memsage_UI : MonoBehaviour
             else if (killerName == "BLUE2")
             {
                 killerObject = GameObject.Instantiate(blue2, killer.position, Quaternion.identity);
+            }else if (killerName == "BLUE4")
+            {
+                killedObject = GameObject.Instantiate(blue4, killer.position, Quaternion.identity);
+            }else if (killerName == "RED4")
+            {
+                killedObject = GameObject.Instantiate(red4, killer.position, Quaternion.identity);
             }
             else
             {
@@ -82,6 +88,18 @@ public class kill_memsage_UI : MonoBehaviour
             else if (killedName == "BLUE2")
             {
                 killedObject = GameObject.Instantiate(blue2, killed.position, Quaternion.identity);
+            }else if (killedName == "BlueOutpost")
+            {
+                killedObject = GameObject.Instantiate(blueOutpost, killed.position, Quaternion.identity);
+            }else if (killedName == "RedOutpost")
+            {
+                killedObject = GameObject.Instantiate(redOutpost, killed.position, Quaternion.identity);
+            }else if (killedName == "BLUE4")
+            {
+                killedObject = GameObject.Instantiate(blue4, killed.position, Quaternion.identity);
+            }else if (killedName == "RED4")
+            {
+                killedObject = GameObject.Instantiate(red4, killed.position, Quaternion.identity);
             }
 
             killedText.text = "击毁";

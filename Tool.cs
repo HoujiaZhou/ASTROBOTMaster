@@ -5,6 +5,7 @@ using UnityEngine;
 public class Tool : MonoBehaviour
 {
     [SerializeField] private Transform RED1, RED2, BLUE1, BLUE2;
+    [SerializeField] private GameObject RedOutpose, BlueOutpose ,RedBase,BlueBase,CenterBuff;
     public Transform Get_generate_place(string refereename_)
     {
         string refereename = refereename_;
@@ -20,6 +21,23 @@ public class Tool : MonoBehaviour
         }
     }
 
+    public void StartGame()
+    {
+        RedOutpose.SetActive(true);
+        BlueOutpose.SetActive(true);
+        RedBase.SetActive(true);
+        BlueBase.SetActive(true);
+        CenterBuff.SetActive(true);
+    }
+
+    public void GameOver()
+    {
+        RedOutpose.SetActive(false);
+        BlueOutpose.SetActive(false);
+        RedBase.SetActive(false);
+        BlueBase.SetActive(false);
+        CenterBuff.SetActive(false);
+    }
     public string Get_robot_prename(Robot_type type)
     {
         if (type == Robot_type.Hero)

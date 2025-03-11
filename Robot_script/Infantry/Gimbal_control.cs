@@ -48,7 +48,7 @@ public class Gimbal_control : MonoBehaviourPun
                         pitch_angle += 360;
                     }
                 }
-                if ((pitch_angle <= 22 && -gimbal.gimbal.Pitch < 0) || (pitch_angle >= -45 && -gimbal.gimbal.Pitch > 0))
+                if ((pitch_angle <= 42 && -gimbal.gimbal.Pitch < 0) || (pitch_angle >= -30 && -gimbal.gimbal.Pitch > 0))
                 {
                     Pitch_body.RotateAround(Pitch_body_rotation_center1.position, Pitch_body_rotation_center1.position - Pitch_body_rotation_center2.position, -gimbal.gimbal.Pitch);
                 }

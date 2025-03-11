@@ -21,9 +21,10 @@ public struct Robot_Data
 
 public struct Kill_Memsage
 {
-    public string killer_nickname,killed_nickname;
+    public string killer_nickname, killed_nickname;
 }
-public class Rule_RMUC2025 : MonoBehaviourPun
+
+public class Rule : MonoBehaviourPun
 {
     int[] chassis_HPlevel_Powerfirst_Infantry = { 150, 175, 200, 225, 250, 275, 300, 325, 350, 400 };
     int[] chassis_HPlevel_HPfirst_Infantry = { 200, 225, 250, 275, 300, 325, 350, 375, 400, 400 };
@@ -42,15 +43,21 @@ public class Rule_RMUC2025 : MonoBehaviourPun
     public float gameRunningTime, gameTime;
     public int redGold, blueGold;
     public int redWinPoints, blueWinPoints;
+    public int OutposeMaxHp = 1500, BaseMaxHp = 5000;
     public Game_State gameState;
-    public Robot_Data red1, blue1, red3, blue3;
+    public Robot_Data red1, blue1, red3, blue3, red4, blue4, redBase, blueBase, redOutpost, blueOutpost;
     private float lastTime;
-    public Referee_control localRobot;
+    public Referee_control localRobot, localRedOutpost, localBlueOutpost, localRedBase, localBlueBase;
     public Kill_Memsage[] KillMemsages = new Kill_Memsage[100];
     public int killNum;
     public bool killMemsageUpdate;
+    public string memsage;
+    public float memsageTime;
+    public bool normalMemsageUpdate;
     [SerializeField] Center_buff center_buff;
     [SerializeField] Supply_buff supply_buff_red, Supply_buff_blue;
+    [SerializeField] CenterBuff_control centerBuff;
+
     public int Get_MaxHp(Chassis_Referee_type chassis, Robot_type type, int level)
     {
         if (type == Robot_type.Infantry)
@@ -77,7 +84,11 @@ public class Rule_RMUC2025 : MonoBehaviourPun
         }
         else if (type == Robot_type.Outpost)
         {
-            return 1500;
+            return OutposeMaxHp;
+        }
+        else if (type == Robot_type.Base)
+        {
+            return BaseMaxHp;
         }
         else return 0;
     }
@@ -148,14 +159,24 @@ public class Rule_RMUC2025 : MonoBehaviourPun
         }
         else return 0;
     }
+
     [PunRPC]
-    public void Sync_Kill_memsage(string killer_nickname, string killed_nickname,int killNum)
+    public void Sync_Kill_memsage(string killer_nickname, string killed_nickname, int killNum)
     {
         KillMemsages[killNum].killer_nickname = killer_nickname;
         KillMemsages[killNum].killed_nickname = killed_nickname;
         this.killNum = killNum;
         killMemsageUpdate = true;
     }
+
+    [PunRPC]
+    public void Sync_Normal_memsage(string memsage, float time)
+    {
+        this.memsage = memsage;
+        memsageTime = time;
+        normalMemsageUpdate = true;
+    }
+
     [PunRPC]
     public void Kill_Get_Xp(string nickname, int level)
     {
@@ -164,6 +185,7 @@ public class Rule_RMUC2025 : MonoBehaviourPun
             localRobot.Kill_Xp(level);
         }
     }
+
     [PunRPC]
     public void Give_Xp(string nickname, int xp)
     {
@@ -176,8 +198,52 @@ public class Rule_RMUC2025 : MonoBehaviourPun
         {
             localRobot.Add_Exp(xp / 3);
         }
+
         //前哨站被击毁给予经验
-        
+    }
+
+    [PunRPC]
+    void Give_Defense(Robot_color color, int defense, float time)
+    {
+        if (localRobot.Get_Robot_color() == color)
+        {
+            localRobot.Add_Defense(defense, time);
+        }
+
+        if (color == Robot_color.RED)
+        {
+            if (localRedBase)
+            {
+                localRedBase.Add_Defense(defense, time);
+            }
+
+            if (localRedOutpost)
+            {
+                localRedOutpost.Add_Defense(defense, time);
+            }
+        }
+
+        if (color == Robot_color.BLUE)
+        {
+            if (localBlueBase)
+            {
+                localBlueBase.Add_Defense(defense, time);
+            }
+
+            if (localBlueOutpost)
+            {
+                localBlueOutpost.Add_Defense(defense, time);
+            }
+        }
+    }
+
+    [PunRPC]
+    void Give_DamageRate(Robot_color color, int rate, float time)
+    {
+        if (localRobot.Get_Robot_color() == color)
+        {
+            localRobot.Set_DamageRate(rate, time);
+        }
     }
 
     [PunRPC]
@@ -220,14 +286,50 @@ public class Rule_RMUC2025 : MonoBehaviourPun
             blue3.WinPoint = winPoint;
             blue3.level = level;
         }
+        else if (nickname == "RedBase")
+        {
+            redBase.Hp = hp;
+            redBase.MaxHp = maxHp;
+            redBase.WinPoint = winPoint;
+            redBase.level = level;
+        }
+        else if (nickname == "BlueBase")
+        {
+            blueBase.Hp = hp;
+            blueBase.MaxHp = maxHp;
+            blueBase.WinPoint = winPoint;
+            blueBase.level = level;
+        }
+        else if (nickname == "RedOutpost")
+        {
+            redOutpost.Hp = hp;
+            redOutpost.MaxHp = maxHp;
+            redOutpost.WinPoint = winPoint;
+            redOutpost.level = level;
+        }
+        else if (nickname == "BlueOutpost")
+        {
+            blueOutpost.Hp = hp;
+            blueOutpost.MaxHp = maxHp;
+            blueOutpost.WinPoint = winPoint;
+            blueOutpost.level = level;
+        }
     }
 
     public void Kill_Memsage_Updata(string killer_nickname, string killed_nickname)
     {
         KillMemsages[++killNum].killer_nickname = killer_nickname;
         KillMemsages[killNum].killed_nickname = killed_nickname;
-        photonView.RPC("Sync_Kill_memsage", RpcTarget.All, killer_nickname, killed_nickname,killNum);
+        photonView.RPC("Sync_Kill_memsage", RpcTarget.All, killer_nickname, killed_nickname, killNum);
     }
+
+    public void Send_Memsage(string memsage, float time)
+    {
+        memsageTime = time;
+        this.memsage = memsage;
+        photonView.RPC("Sync_Normal_memsage", RpcTarget.All, memsage, time);
+    }
+
     private void Winponit_Settle()
     {
         redWinPoints = red1.WinPoint + red3.WinPoint;
@@ -270,11 +372,69 @@ public class Rule_RMUC2025 : MonoBehaviourPun
             photonView.RPC("Sync_Other_Robot", RpcTarget.All, nickname, blue3.MaxHp, blue3.Hp, blue3.WinPoint,
                 blue3.level);
         }
+        else if (nickname == "RedBase")
+        {
+            redBase.Hp = hp;
+            redBase.MaxHp = maxHp;
+            redBase.WinPoint = winPoint;
+            redBase.level = level;
+            photonView.RPC("Sync_Other_Robot", RpcTarget.All, nickname, redBase.MaxHp, redBase.Hp, redBase.WinPoint,
+                redBase.level);
+        }
+        else if (nickname == "BlueBase")
+        {
+            blueBase.Hp = hp;
+            blueBase.MaxHp = maxHp;
+            blueBase.WinPoint = winPoint;
+            blueBase.level = level;
+            photonView.RPC("Sync_Other_Robot", RpcTarget.All, nickname, blueBase.MaxHp, blueBase.Hp, blueBase.WinPoint,
+                blueBase.level);
+        }
+        else if (nickname == "RedOutpost")
+        {
+            redOutpost.Hp = hp;
+            redOutpost.MaxHp = maxHp;
+            redOutpost.WinPoint = winPoint;
+            redOutpost.level = level;
+            photonView.RPC("Sync_Other_Robot", RpcTarget.All, nickname, redOutpost.MaxHp, redOutpost.Hp,
+                redOutpost.WinPoint,
+                redOutpost.level);
+        }
+        else if (nickname == "BlueOutpost")
+        {
+            blueOutpost.Hp = hp;
+            blueOutpost.MaxHp = maxHp;
+            blueOutpost.WinPoint = winPoint;
+            blueOutpost.level = level;
+            photonView.RPC("Sync_Other_Robot", RpcTarget.All, nickname, blueOutpost.MaxHp, blueOutpost.Hp,
+                blueOutpost.WinPoint,
+                blueOutpost.level);
+        }
     }
 
     public void Set_LocalRobot(Referee_control robot)
     {
         localRobot = robot;
+    }
+
+    public void Set_LocalBuliding(Referee_control robot, string nickname)
+    {
+        if (nickname == "RedBase")
+        {
+            localRedBase = robot;
+        }
+        else if (nickname == "BlueBase")
+        {
+            localBlueBase = robot;
+        }
+        else if (nickname == "RedOutpost")
+        {
+            localRedOutpost = robot;
+        }
+        else if (nickname == "BlueOutpost")
+        {
+            localBlueOutpost = robot;
+        }
     }
 
     private void Start()
@@ -295,23 +455,12 @@ public class Rule_RMUC2025 : MonoBehaviourPun
     {
         while (true)
         {
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSeconds(0.5f);
             if (PhotonNetwork.IsMasterClient)
             {
                 photonView.RPC("Sync_Time", RpcTarget.Others, gameRunningTime);
                 photonView.RPC("Sync_Gold", RpcTarget.Others, redGold, Robot_color.RED);
                 photonView.RPC("Sync_Gold", RpcTarget.Others, blueGold, Robot_color.BLUE);
-                // if(gameState == Game_State.Running)
-                // {
-                //     if(localRobot.Get_nickname() == "RED1")
-                //         photonView.RPC("Sync_Other_Robot", RpcTarget.All, localRobot.Get_nickname(), red1);
-                //     if(localRobot.Get_nickname() == "RED2")
-                //         photonView.RPC("Sync_Other_Robot", RpcTarget.All, localRobot.Get_nickname(), red3);
-                //     if(localRobot.Get_nickname() == "BLUE1")
-                //         photonView.RPC("Sync_Other_Robot", RpcTarget.All, localRobot.Get_nickname(), blue1);
-                //     if(localRobot.Get_nickname() == "BLUE2")
-                //         photonView.RPC("Sync_Other_Robot", RpcTarget.All, localRobot.Get_nickname(), blue3);
-                // }
             }
         }
     }
@@ -439,15 +588,15 @@ public class Rule_RMUC2025 : MonoBehaviourPun
     {
         if (gameState != Game_State.Running)
         {
-            if(center_buff)center_buff.Set_Work(false);
-            if(supply_buff_red)supply_buff_red.Set_Work(false);
-            if(Supply_buff_blue)Supply_buff_blue.Set_Work(false);
+            if (center_buff) center_buff.Set_Work(false);
+            if (supply_buff_red) supply_buff_red.Set_Work(false);
+            if (Supply_buff_blue) Supply_buff_blue.Set_Work(false);
         }
         else
         {
-            if(center_buff)center_buff.Set_Work(true);
-            if(supply_buff_red)supply_buff_red.Set_Work(true);
-            if(Supply_buff_blue)Supply_buff_blue.Set_Work(true);
+            if (center_buff) center_buff.Set_Work(true);
+            if (supply_buff_red) supply_buff_red.Set_Work(true);
+            if (Supply_buff_blue) Supply_buff_blue.Set_Work(true);
         }
 
         if (gameState == Game_State.Unprepared) return;
@@ -464,7 +613,7 @@ public class Rule_RMUC2025 : MonoBehaviourPun
                 gameRunningTime += Time.deltaTime;
                 if (gameRunningTime >= 10f)
                 {
-                    Add_Gold(200, Robot_color.All);
+                    Add_Gold(400, Robot_color.All);
                     gameState = Game_State.Running;
                     gameRunningTime = 0;
                     photonView.RPC("Sync_Game_state", RpcTarget.Others, gameState);
@@ -476,27 +625,67 @@ public class Rule_RMUC2025 : MonoBehaviourPun
                 gameRunningTime += Time.deltaTime;
                 Winponit_Settle();
                 {
+                    if (lastTime < 60f && gameRunningTime >= 60f)
+                        if (PhotonNetwork.IsMasterClient)
+                        {
+                            Send_Memsage("小能量机关可激活", 5f);
+                            centerBuff.StartRotate(false);
+                        }
+                    if (lastTime < 150f && gameRunningTime >= 150f)
+                        if (PhotonNetwork.IsMasterClient)
+                        {
+                            Send_Memsage("小能量机关可激活", 5f);
+                            centerBuff.StartRotate(false);
+                        }
+                    if (lastTime < 240f && gameRunningTime >= 240f)
+                        if (PhotonNetwork.IsMasterClient)
+                        {
+                            Send_Memsage("大能量机关可激活", 5f);
+                            centerBuff.StartRotate(true);
+                        }
+                    if (lastTime < 315 && gameRunningTime >= 315f)
+                        if (PhotonNetwork.IsMasterClient)
+                        {
+                            Send_Memsage("大能量机关可激活", 5f);
+                            centerBuff.StartRotate(true);
+                        }
+                    if (lastTime < 390f && gameRunningTime >= 390f)
+                        if (PhotonNetwork.IsMasterClient)
+                        {
+                            Send_Memsage("大能量机关可激活", 5f);
+                            centerBuff.StartRotate(true);
+                        }
                     if (lastTime < 60 && gameRunningTime >= 60f)
                     {
-                        Add_Gold(200, Robot_color.All);
+                        Add_Gold(50, Robot_color.All);
                     }
 
                     if (lastTime < 120 && gameRunningTime >= 120f)
                     {
-                        Add_Gold(200, Robot_color.All);
+                        Add_Gold(50, Robot_color.All);
                     }
 
                     if (lastTime < 180 && gameRunningTime >= 180f)
                     {
-                        Add_Gold(300, Robot_color.All);
+                        Add_Gold(50, Robot_color.All);
                     }
 
                     if (lastTime < 240 && gameRunningTime >= 240f)
                     {
-                        Add_Gold(300, Robot_color.All);
+                        Add_Gold(50, Robot_color.All);
+                    }
+
+                    if (lastTime < 300 && gameRunningTime >= 300f)
+                    {
+                        Add_Gold(50, Robot_color.All);
+                    }
+
+                    if (lastTime < 360 && gameRunningTime >= 360f)
+                    {
+                        Add_Gold(150, Robot_color.All);
                     }
                 }
-                if (gameRunningTime >= 300)
+                if (gameRunningTime >= 420)
                 {
                     if (redWinPoints > blueWinPoints)
                     {

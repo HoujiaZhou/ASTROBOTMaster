@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Center_buff : MonoBehaviourPun
 {
-    [SerializeField]private Rule_RMUL2025 rule;
+    [SerializeField]private Rule rule;
     private float timer;
     private Robot_color occupyColor;
     private Referee_control referee;
@@ -26,7 +26,7 @@ public class Center_buff : MonoBehaviourPun
                 occupyColor = Robot_color.Null;
         if (!rule)
         {
-            rule = GameObject.FindGameObjectWithTag("Rule").GetComponent<Rule_RMUL2025>();
+            rule = GameObject.FindGameObjectWithTag("Rule").GetComponent<Rule>();
         }
         else
         {

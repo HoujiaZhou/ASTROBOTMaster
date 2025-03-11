@@ -3,7 +3,7 @@
     using TMPro;
     using UnityEngine;
 
-    public class Message_UI: MonoBehaviour
+    public class Memsage_UI: MonoBehaviour
     {
         [SerializeField] private    TextMeshProUGUI text;
         private float time;

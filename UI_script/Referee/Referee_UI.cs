@@ -1,6 +1,7 @@
 using System.Net.Mime;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class Referee_UI : MonoBehaviour
@@ -23,11 +24,12 @@ public class Referee_UI : MonoBehaviour
     [SerializeField] private Win_UI win_ui;
     [SerializeField] private kill_memsage_UI kill_memsage;
     [SerializeField] private control_panel_UI control_panel_UI;
+ [SerializeField] private Memsage_UI memsageUI;
     private GameObject robot;
     private UI_parent parent;
     private Robot_Case robot_case;
     private Robot_type robot_type;
-    private Rule_RMUL2025 rule;
+    private Rule rule;
     private Robot_shoot _shootData;
     public int panel_;
 
@@ -161,13 +163,15 @@ public class Referee_UI : MonoBehaviour
                     buy_bullet.Message_Updata(rule.Get_Gold_Num(referee_.Get_Robot_color()));
                 }
 
-                rule_message.Set_Message(rule.Get_Gold_Num(Robot_color.RED), rule.Get_Gold_Num(Robot_color.BLUE),
-                    rule.Get_Win_Points(Robot_color.RED), rule.Get_Win_Points(Robot_color.BLUE),
-                    rule.Get_time(), rule.Get_State());
-                rule_message.Set_Robot_Data(rule.red1, rule.blue1, rule.red3, rule.blue3);
+                if(!rule_message.rule)rule_message.SetRule(rule);
                 kill_memsage.Set_Kill_Memsage(rule.killMemsageUpdate, rule.KillMemsages[rule.killNum].killer_nickname,
                     rule.KillMemsages[rule.killNum].killed_nickname);
                 rule.killMemsageUpdate = false;
+                if (rule.normalMemsageUpdate)
+                {
+                    memsageUI.Set_message(rule.memsage,rule.memsageTime);
+                    rule.normalMemsageUpdate = false;
+                }
             }
 
             if (Input.GetKeyDown((KeyCode.P)))

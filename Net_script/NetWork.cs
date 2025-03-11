@@ -17,6 +17,7 @@ public class NetWork : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+        tool_ = GameObject.FindGameObjectWithTag("Tool").GetComponent<Tool>();
         ExitGames.Client.Photon.Hashtable playerProperties = new ExitGames.Client.Photon.Hashtable();
         playerProperties["Color"] = 0;
         playerProperties["Type"] = 0;
@@ -25,7 +26,7 @@ public class NetWork : MonoBehaviourPunCallbacks
         PhotonNetwork.LocalPlayer.SetCustomProperties(playerProperties);
     }
 
-
+    
     public override void OnPlayerEnteredRoom(Player newPlayer)
     {
         base.OnPlayerEnteredRoom(newPlayer);
@@ -34,7 +35,7 @@ public class NetWork : MonoBehaviourPunCallbacks
 
     public override void OnLeftRoom()
     {
-        
+        tool_.GameOver();
         base.OnLeftRoom();
         Isjoined = false;
     }

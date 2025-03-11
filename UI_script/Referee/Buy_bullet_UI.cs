@@ -8,6 +8,7 @@ public class Buy_bullet_UI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI Buy10, Buy20, Buy50, Buy100;
     [SerializeField] private TextMeshProUGUI Reduce10, Reduce20, Reduce50, Reduce100;
     private int buyBulletNum;
+    private int isSupply;
     private int maxBullet, nowBullet;
     private Robot_type robotType;
     private Referee_control referee;
@@ -243,7 +244,7 @@ public class Buy_bullet_UI : MonoBehaviour
             Reduce50.text = "-50";
             Reduce100.text = "-100";
         }
-
+        this.isSupply = isSupply;
         if (isSupply != 0)
         {
             allowNum.color = Color.white;
@@ -257,6 +258,7 @@ public class Buy_bullet_UI : MonoBehaviour
     }
     private void OnGUI()
     {
+        if (isSupply == 0) buyBulletNum = 0;
         buyNum.text = buyBulletNum.ToString();
     }
 }

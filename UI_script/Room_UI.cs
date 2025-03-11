@@ -40,6 +40,7 @@ public class Room_UI : MonoBehaviourPun
         parent.Set_Game_State(true);
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
+        tool_.StartGame();
     }
 
     [PunRPC]
@@ -252,7 +253,7 @@ public class Room_UI : MonoBehaviourPun
         {
             rules = GameObject.FindGameObjectWithTag("Rule");
         }
-        robot.GetComponentInChildren<Referee_control>().Init(robotType, robotColor, nickname,rules.GetComponent<Rule_RMUL2025>());
+        robot.GetComponentInChildren<Referee_control>().Init(robotType, robotColor, nickname,rules.GetComponent<Rule>());
         parent.Set_Robot(robot);
     }
 }

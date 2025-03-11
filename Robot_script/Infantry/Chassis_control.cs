@@ -15,7 +15,7 @@ public class Chassis_control : MonoBehaviourPun
     [SerializeField] private Rigidbody movebody;
     [SerializeField] private Transform movebody_;
     [SerializeField] private Robot_control chassis_Data;
-
+    
     private bool Isgroud;
 
     //     public float Robot_Speed = 1000f;
@@ -40,7 +40,7 @@ public class Chassis_control : MonoBehaviourPun
             vw_Pid = pID.Creat_PID();
             vx_Pid.Set_parameter(wheel_Kp, wheel_Ki, wheel_Kd,120000);
             vy_Pid.Set_parameter(wheel_Kp, wheel_Ki, wheel_Kd,120000);
-            vw_Pid.Set_parameter(rotate_kp, rotate_ki, rotate_kd,500000);
+            vw_Pid.Set_parameter(rotate_kp, rotate_ki, rotate_kd,2000000);
             vx_Pid.Set_measure(movebody.linearVelocity.x);
             vy_Pid.Set_measure(movebody.linearVelocity.z);
             vw_Pid.Set_measure(movebody.angularVelocity.y);
@@ -81,7 +81,7 @@ public class Chassis_control : MonoBehaviourPun
             float Vw_Speed = chassis_Data.chassis.Vw_Speed;
             float Angle_gimbal = gimbal_angle.rotation.eulerAngles.y * (float)Math.PI / 180;
             float Angle_chassis = transform.rotation.eulerAngles.y * (float)Math.PI / 180;
-            Vector3 movement = new Vector3(0, 0, 0);
+            
             while (Angle_gimbal > (float)Math.PI || Angle_gimbal < -(float)Math.PI)
             {
                 if (Angle_gimbal > (float)Math.PI)
@@ -107,25 +107,8 @@ public class Chassis_control : MonoBehaviourPun
                     Angle_chassis += (float)Math.PI * 2;
                 }
             }
-
-            if (chassis_Data.chassis.Chassis_Mode == Chassis_Mode.Normal_mode)
-            {
-                Vw_Speed += 1 * (Angle_gimbal - Angle_chassis);
-                while (Vw_Speed > (float)Math.PI || Vw_Speed < -(float)Math.PI)
-                {
-                    if (Vw_Speed > (float)Math.PI)
-                    {
-                        Vw_Speed -= (float)Math.PI * 2;
-                    }
-
-                    if (Vw_Speed < -(float)Math.PI)
-                    {
-                        Vw_Speed += (float)Math.PI * 2;
-                    }
-                }
-
-                Vw_Speed *= 5;
-            }
+            Vector3 movement = new Vector3(0, 0, 0);
+           
 
             movement.x = Vy_Speed * (float)Math.Cos(Angle_gimbal) + Vx_Speed * (float)Math.Sin(Angle_gimbal);
             movement.z =
@@ -152,7 +135,7 @@ public class Chassis_control : MonoBehaviourPun
             else if (!Isgroud)
             {
                 Isgroud_time += Time.deltaTime;
-                movebody.AddForce(0, -9.8f * 100, 0, ForceMode.Acceleration);
+                // movebody.AddForce(0, -9.8f * 100, 0, ForceMode.Acceleration);
                 if (Isgroud_time >= 5)
                 {
                     movebody_.eulerAngles = new Vector3(0, movebody_.eulerAngles.y, 0);
